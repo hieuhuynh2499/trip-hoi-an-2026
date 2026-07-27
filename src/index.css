@@ -1,0 +1,4 @@
+* { box-sizing: border-box; }
+html { background: #031237; }
+body { margin: 0; min-width: 320px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; }
+button { font: inherit; }
