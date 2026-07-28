@@ -80,7 +80,7 @@ function App() {
     <main className="game-shell">
       <header className="game-header">
         <div className="brand-line">
-          <div><p className="eyebrow">TRIP 2026 · MINI GAME</p><h1>Giải mã hành trình</h1></div>
+          <div><p className="eyebrow">TRIP 2026 · GIẢI MÃ HÀNH TRÌNH</p><h1>C3 MATSURI</h1></div>
           <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
