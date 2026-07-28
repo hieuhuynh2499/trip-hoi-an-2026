@@ -43,24 +43,57 @@ const defaultQuestions = [
   ['Nhạc cụ gõ gồm nhiều mặt trống?', 'Trống', 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f'],
 ]
 
+const defaultQuestionIndexes = [0, 1, 4, 5, 8, 9, 12, 13]
+
+const parseCsv = (text) => {
+  const rows = []
+  let row = []
+  let cell = ''
+  let quoted = false
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index]
+    if (character === '"') {
+      if (quoted && text[index + 1] === '"') { cell += '"'; index += 1 } else quoted = !quoted
+    } else if (character === ',' && !quoted) { row.push(cell.trim()); cell = ''
+    } else if ((character === '\n' || character === '\r') && !quoted) {
+      if (character === '\r' && text[index + 1] === '\n') index += 1
+      row.push(cell.trim())
+      if (row.some(Boolean)) rows.push(row)
+      row = []; cell = ''
+    } else cell += character
+  }
+  row.push(cell.trim())
+  if (row.some(Boolean)) rows.push(row)
+  return rows
+}
+
 function App() {
-  const [questionData, setQuestionData] = useState(defaultQuestions.map(([question, label, imageUrl], index) => ({ question, label, imageUrl, detail: topics[Math.floor(index / 4)], icon: topicIcons[Math.floor(index / 4)][index % 4] })))
+  const [questionData, setQuestionData] = useState(defaultQuestionIndexes.map((sourceIndex, index) => {
+    const [question, label, imageUrl] = defaultQuestions[sourceIndex]
+    const topicIndex = Math.floor(index / 2)
+    return { question, label, imageUrl, detail: topics[topicIndex], icon: topicIcons[topicIndex][index % 2] }
+  }))
   const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
   const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới'])
   const [isEditor, setIsEditor] = useState(false)
   const [results, setResults] = useState({})
   const [selected, setSelected] = useState(null)
   const [openedHints, setOpenedHints] = useState([])
+  const [hintOwners, setHintOwners] = useState({})
   const [hintPrompt, setHintPrompt] = useState(null)
   const [promptedMilestones, setPromptedMilestones] = useState({})
   const [viewHint, setViewHint] = useState(null)
   const [winner, setWinner] = useState(null)
   const [winnerModal, setWinnerModal] = useState(false)
-  const [hintThreshold, setHintThreshold] = useState(3)
-  const [activeTopic, setActiveTopic] = useState(null)
+  const [hintThreshold, setHintThreshold] = useState(2)
+  const [importMessage, setImportMessage] = useState('')
   const greenScore = Object.values(results).filter((result) => result === 'green').length
   const redScore = Object.values(results).filter((result) => result === 'red').length
   const revealedCount = Object.values(results).filter((result) => result === 'green' || result === 'red').length
+  const greenHints = Object.values(hintOwners).filter((team) => team === 'green').length
+  const redHints = Object.values(hintOwners).filter((team) => team === 'red').length
+  const priorityTeam = greenHints === redHints ? null : greenHints > redHints ? 'green' : 'red'
 
   const markAnswer = (result) => {
     setResults({ ...results, [selected]: result })
@@ -76,33 +109,73 @@ function App() {
     }
   }
 
+  const importQuestions = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const rows = parseCsv(String(reader.result || ''))
+      const header = rows.shift()?.map((value) => value.toLowerCase().replace(/\s+/g, '')) || []
+      const column = (names, fallback) => {
+        const position = header.findIndex((name) => names.includes(name))
+        return position >= 0 ? position : fallback
+      }
+      const numberColumn = column(['number', 'stt', 'id', 'cau'], -1)
+      const topicColumn = column(['topic', 'chude'], 0)
+      const questionColumn = column(['question', 'cauhoi'], 1)
+      const answerColumn = column(['answer', 'dapan'], 2)
+      const imageColumn = column(['imageurl', 'image', 'urlhinh'], 3)
+      const detailColumn = column(['detail', 'mota'], 4)
+      const next = [...questionData]
+      const topicPositions = {}
+      let imported = 0
+
+      rows.forEach((row, rowIndex) => {
+        const topicIndex = topics.findIndex((topic) => topic.toLowerCase() === (row[topicColumn] || '').toLowerCase())
+        const fallbackIndex = topicIndex >= 0 ? topicIndex * 2 + (topicPositions[topicIndex] || 0) : rowIndex
+        if (topicIndex >= 0) topicPositions[topicIndex] = (topicPositions[topicIndex] || 0) + 1
+        const declaredIndex = numberColumn >= 0 ? Number(row[numberColumn]) - 1 : fallbackIndex
+        if (!Number.isInteger(declaredIndex) || declaredIndex < 0 || declaredIndex >= next.length || !row[questionColumn]) return
+        next[declaredIndex] = {
+          ...next[declaredIndex],
+          question: row[questionColumn],
+          label: row[answerColumn] || next[declaredIndex].label,
+          imageUrl: row[imageColumn] || '',
+          detail: row[detailColumn] || (topicIndex >= 0 ? topics[topicIndex] : next[declaredIndex].detail),
+        }
+        imported += 1
+      })
+      setQuestionData(next)
+      setImportMessage(imported ? `Đã nhập ${imported} câu hỏi.` : 'Không tìm thấy câu hỏi hợp lệ trong file CSV.')
+      event.target.value = ''
+    }
+    reader.readAsText(file, 'utf-8')
+  }
+
   return (
     <main className="game-shell">
       <header className="game-header">
         <div className="brand-line">
-          <div><p className="eyebrow">TRIP 2026 · GIẢI MÃ HÀNH TRÌNH</p><h1>C3 MATSURI</h1></div>
+          <div className="matsuri-key-visual"><div className="matsuri-logos"><img className="ceyc-combined-logo" src={`${import.meta.env.BASE_URL}ceyc-matsuri-full.png`} alt="Logo CeYc Matsuri" /></div></div>
           <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
-          <button className="master-question" onClick={() => setWinnerModal(true)}><span>Câu hỏi tổng thể</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
-          <div className="team-score team-green"><span>Đội Xanh</span><strong>{greenScore}</strong><small>điểm</small></div>
-          <div className="team-score team-red"><span>Đội Đỏ</span><strong>{redScore}</strong><small>điểm</small></div>
+          <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
+          <div className={`team-score team-green ${priorityTeam === 'green' ? 'is-priority' : ''}`}><span>Đội Xanh</span><strong>{greenScore}</strong><small>điểm</small>{priorityTeam === 'green' && <em>Ưu tiên trả lời</em>}</div>
+          <div className={`team-score team-red ${priorityTeam === 'red' ? 'is-priority' : ''}`}><span>Đội Đỏ</span><strong>{redScore}</strong><small>điểm</small>{priorityTeam === 'red' && <em>Ưu tiên trả lời</em>}</div>
         </div>
       </header>
 
       <section className="hint-grid" aria-label="Gợi ý">
-        {[0, 1, 2].map((index) => <button key={index} className={`hint-card ${openedHints.includes(index) ? 'is-unlocked' : 'is-locked'}`} aria-label={openedHints.includes(index) ? `Xem gợi ý ${index + 1}` : `Gợi ý ${index + 1} đang khóa`} disabled={!openedHints.includes(index)} onClick={() => setViewHint(index)}><span>{openedHints.includes(index) ? '◉' : '?'}</span></button>)}
+        {[0, 1, 2].map((index) => <div key={index} className={`hint-card ${openedHints.includes(index) ? 'is-unlocked' : 'is-locked'}`} aria-label={openedHints.includes(index) ? `Gợi ý ${index + 1}: ${hintTexts[index]}` : `Gợi ý ${index + 1} đang khóa`}><span>{openedHints.includes(index) ? hintTexts[index] : '?'}</span></div>)}
       </section>
 
-      {activeTopic !== null && <div className="topic-toolbar"><button onClick={() => setActiveTopic(null)}>← Tất cả chủ đề</button><strong>{topics[activeTopic]}</strong><span>4 câu hỏi</span></div>}
-      <section className={`question-grid ${activeTopic === null ? 'topic-grid' : ''}`} aria-label="Bảng câu hỏi">
-        {activeTopic === null ? topics.map((topic, index) => (
-          <button className="question-card topic-card" key={topic} onClick={() => setActiveTopic(index)}><span className="topic-icon">{['⚽', '⌛', '🎬', '♫'][index]}</span><small>CHỦ ĐỀ {String(index + 1).padStart(2, '0')}</small><strong>{topic}</strong><span className="topic-enter">Khám phá 04 câu hỏi <b>→</b></span></button>
-        )) : questionData.slice(activeTopic * 4, activeTopic * 4 + 4).map((item, relativeIndex) => {
-          const index = activeTopic * 4 + relativeIndex
+      <section className="question-grid" aria-label="Bảng câu hỏi">
+        {questionData.map((item, index) => {
           const result = results[index]
           const isOpen = result === 'green' || result === 'red'
           const isWrong = result === 'wrong'
+          const topicIndex = Math.floor(index / 2)
           return (
             <button
               className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''}`}
@@ -110,10 +183,10 @@ function App() {
               onClick={() => !result && setSelected(index)}
               disabled={Boolean(result)}
             >
-              {!isOpen && !isWrong && <span className="card-preview">{topicIcons[activeTopic][relativeIndex]}</span>}
+              {!isOpen && !isWrong && <span className="card-preview">{topicIcons[topicIndex][index % 2]}</span>}
               {isOpen && <span className="card-icon">{item.icon}</span>}
               <strong>{isOpen ? item.label : String(index + 1).padStart(2, '0')}</strong>
-              <small>{isOpen ? item.detail : isWrong ? 'Đáp án không đúng' : topics[activeTopic]}</small>
+              <small>{isOpen ? item.detail : isWrong ? 'Đáp án không đúng' : item.detail}</small>
             </button>
           )
         })}
@@ -147,7 +220,7 @@ function App() {
             </> : <>
               <p className="modal-label">CHỌN MỘT GỢI Ý</p>
               <h2>Mở ô nào?</h2>
-              <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintPrompt(null) }}>?</button>)}</div>
+              <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); setHintPrompt(null) }}>?</button>)}</div>
             </>}
           </section>
         </div>
@@ -180,9 +253,14 @@ function App() {
         <section className="editor-page" aria-label="Thiết lập câu hỏi">
           <header className="editor-header"><div><p className="eyebrow">THIẾT LẬP NỘI DUNG</p><h1>Chỉnh sửa câu hỏi</h1></div><button className="done-button" onClick={() => setIsEditor(false)}>Xong</button></header>
           <div className="editor-form">
+            <section className="csv-import">
+              <div><span>NHẬP NHANH</span><h2>Import câu hỏi từ CSV</h2><p>Dùng các cột: <b>topic, question, answer, imageUrl, detail</b>. Có thể thêm cột <b>number</b> (01–08) để chọn đúng vị trí câu hỏi.</p></div>
+              <label className="csv-upload">Chọn file CSV<input type="file" accept=".csv,text/csv" onChange={importQuestions} /></label>
+              {importMessage && <small>{importMessage}</small>}
+            </section>
             <label className="field full-field">Câu hỏi tổng thể<input value={overallQuestion} onChange={(event) => setOverallQuestion(event.target.value)} /></label>
             <div className="hint-fields">{hintTexts.map((hint, index) => <label className="field" key={index}>Gợi ý {index + 1}<input value={hint} onChange={(event) => setHintTexts(hintTexts.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} /></label>)}</div>
-            <div className="editor-topics">{topics.map((topic, topicIndex) => <section className="editor-topic" key={topic}><header><span>CHỦ ĐỀ {String(topicIndex + 1).padStart(2, '0')}</span><h2>{topic}</h2><small>Câu {String(topicIndex * 4 + 1).padStart(2, '0')}–{String(topicIndex * 4 + 4).padStart(2, '0')}</small></header><div className="question-fields">{questionData.slice(topicIndex * 4, topicIndex * 4 + 4).map((item, relativeIndex) => { const index = topicIndex * 4 + relativeIndex; return <article className="edit-question" key={index}><b>{String(index + 1).padStart(2, '0')}</b><label className="field">Câu hỏi<input value={item.question} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, question: event.target.value } : value))} /></label><label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, imageUrl: event.target.value } : value))} /></label><label className="field">Đáp án khi mở ô<input value={item.label} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, label: event.target.value } : value))} /></label><label className="field">Mô tả<input value={item.detail} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, detail: event.target.value } : value))} /></label></article>})}</div></section>)}</div>
+            <div className="editor-topics">{topics.map((topic, topicIndex) => <section className="editor-topic" key={topic}><header><span>CHỦ ĐỀ {String(topicIndex + 1).padStart(2, '0')}</span><h2>{topic}</h2><small>Câu {String(topicIndex * 2 + 1).padStart(2, '0')}–{String(topicIndex * 2 + 2).padStart(2, '0')}</small></header><div className="question-fields">{questionData.slice(topicIndex * 2, topicIndex * 2 + 2).map((item, relativeIndex) => { const index = topicIndex * 2 + relativeIndex; return <article className="edit-question" key={index}><b>{String(index + 1).padStart(2, '0')}</b><label className="field">Câu hỏi<input value={item.question} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, question: event.target.value } : value))} /></label><label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, imageUrl: event.target.value } : value))} /></label><label className="field">Đáp án khi mở ô<input value={item.label} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, label: event.target.value } : value))} /></label><label className="field">Mô tả<input value={item.detail} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, detail: event.target.value } : value))} /></label></article>})}</div></section>)}</div>
           </div>
         </section>
       )}
