@@ -24,6 +24,8 @@ const topicIcons = [
   ['🎵', '🎤', '🎸', '🎧'],
 ]
 
+const genericQuestionIcons = ['✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆']
+
 const defaultQuestions = [
   ['Cristiano Ronaldo đã giành bao nhiêu Quả bóng vàng?', '5', 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'],
   ['Pelé đã vô địch World Cup bao nhiêu lần?', '3', 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211'],
@@ -72,7 +74,7 @@ function App() {
   const [questionData, setQuestionData] = useState(defaultQuestionIndexes.map((sourceIndex, index) => {
     const [question, label, imageUrl] = defaultQuestions[sourceIndex]
     const topicIndex = Math.floor(index / 2)
-    return { question, label, imageUrl, detail: topics[topicIndex], icon: topicIcons[topicIndex][index % 2] }
+    return { question, label, imageUrl, detail: 'Câu hỏi', icon: genericQuestionIcons[index] }
   }))
   const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
   const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới'])
@@ -175,18 +177,18 @@ function App() {
           const result = results[index]
           const isOpen = result === 'green' || result === 'red'
           const isWrong = result === 'wrong'
-          const topicIndex = Math.floor(index / 2)
+          const hasLongAnswer = item.label.trim().length > 14
           return (
             <button
-              className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''}`}
+              className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''} ${hasLongAnswer ? 'has-long-answer' : ''}`}
               key={item.label}
               onClick={() => !result && setSelected(index)}
               disabled={Boolean(result)}
             >
-              {!isOpen && !isWrong && <span className="card-preview">{topicIcons[topicIndex][index % 2]}</span>}
+              {!isOpen && !isWrong && <span className="card-preview">{genericQuestionIcons[index]}</span>}
               {isOpen && <span className="card-icon">{item.icon}</span>}
-              <strong>{isOpen ? item.label : String(index + 1).padStart(2, '0')}</strong>
-              <small>{isOpen ? item.detail : isWrong ? 'Đáp án không đúng' : item.detail}</small>
+              <strong className={isOpen ? 'revealed-answer' : ''}>{isOpen ? item.label : String(index + 1).padStart(2, '0')}</strong>
+              <small>{isOpen ? item.detail : isWrong ? 'Đáp án không đúng' : 'Câu hỏi'}</small>
             </button>
           )
         })}
