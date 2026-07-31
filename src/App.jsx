@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 const questions = [
@@ -24,7 +24,7 @@ const topicIcons = [
   ['🎵', '🎤', '🎸', '🎧'],
 ]
 
-const genericQuestionIcons = ['✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆']
+const genericQuestionIcons = ['✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆']
 
 const defaultQuestions = [
   ['Cristiano Ronaldo đã giành bao nhiêu Quả bóng vàng?', '5', 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'],
@@ -45,7 +45,7 @@ const defaultQuestions = [
   ['Nhạc cụ gõ gồm nhiều mặt trống?', 'Trống', 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f'],
 ]
 
-const defaultQuestionIndexes = [0, 1, 4, 5, 8, 9, 12, 13]
+const defaultQuestionIndexes = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14]
 
 const parseCsv = (text) => {
   const rows = []
@@ -77,6 +77,7 @@ function App() {
     return { question, label, imageUrl, detail: 'Câu hỏi', icon: genericQuestionIcons[index] }
   }))
   const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
+  const [ultimateHintQuestion, setUltimateHintQuestion] = useState('Gợi ý nào sẽ giúp các đội giải đáp thử thách tối thượng?')
   const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới'])
   const [isEditor, setIsEditor] = useState(false)
   const [results, setResults] = useState({})
@@ -88,6 +89,12 @@ function App() {
   const [viewHint, setViewHint] = useState(null)
   const [winner, setWinner] = useState(null)
   const [winnerModal, setWinnerModal] = useState(false)
+  const [celebratingWinner, setCelebratingWinner] = useState(null)
+  const [ultimateHintModal, setUltimateHintModal] = useState(false)
+  const [ultimateHintOpened, setUltimateHintOpened] = useState(false)
+  const [countdownPaused, setCountdownPaused] = useState(false)
+  const [countdownDuration, setCountdownDuration] = useState(20)
+  const [countdown, setCountdown] = useState(null)
   const [hintThreshold, setHintThreshold] = useState(2)
   const [importMessage, setImportMessage] = useState('')
   const greenScore = Object.values(results).filter((result) => result === 'green').length
@@ -96,6 +103,13 @@ function App() {
   const greenHints = Object.values(hintOwners).filter((team) => team === 'green').length
   const redHints = Object.values(hintOwners).filter((team) => team === 'red').length
   const priorityTeam = greenHints === redHints ? null : greenHints > redHints ? 'green' : 'red'
+  const showUltimateHint = Math.max(greenScore, redScore) >= 5 || ultimateHintOpened
+
+  useEffect(() => {
+    if (countdown === null || countdown <= 0 || countdownPaused) return undefined
+    const timer = window.setTimeout(() => setCountdown((seconds) => seconds - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [countdown, countdownPaused])
 
   const markAnswer = (result) => {
     setResults({ ...results, [selected]: result })
@@ -103,10 +117,15 @@ function App() {
     if (result === 'green' || result === 'red') {
       const currentScore = Object.values(results).filter((value) => value === result).length
       const nextScore = currentScore + 1
+      if (nextScore === 6) {
+        setWinner(result)
+        setCelebratingWinner(result)
+        return
+      }
       const milestoneKey = `${result}-${nextScore}`
       if (nextScore % hintThreshold === 0 && !promptedMilestones[milestoneKey] && openedHints.length < 3) {
         setPromptedMilestones({ ...promptedMilestones, [milestoneKey]: true })
-        setHintPrompt({ team: result, choosing: false })
+        setHintPrompt({ team: result })
       }
     }
   }
@@ -134,7 +153,7 @@ function App() {
 
       rows.forEach((row, rowIndex) => {
         const topicIndex = topics.findIndex((topic) => topic.toLowerCase() === (row[topicColumn] || '').toLowerCase())
-        const fallbackIndex = topicIndex >= 0 ? topicIndex * 2 + (topicPositions[topicIndex] || 0) : rowIndex
+        const fallbackIndex = topicIndex >= 0 ? topicIndex * 3 + (topicPositions[topicIndex] || 0) : rowIndex
         if (topicIndex >= 0) topicPositions[topicIndex] = (topicPositions[topicIndex] || 0) + 1
         const declaredIndex = numberColumn >= 0 ? Number(row[numberColumn]) - 1 : fallbackIndex
         if (!Number.isInteger(declaredIndex) || declaredIndex < 0 || declaredIndex >= next.length || !row[questionColumn]) return
@@ -159,7 +178,7 @@ function App() {
       <header className="game-header">
         <div className="brand-line">
           <div className="matsuri-key-visual"><div className="matsuri-logos"><img className="ceyc-combined-logo" src={`${import.meta.env.BASE_URL}ceyc-matsuri-full.png`} alt="Logo CeYc Matsuri" /></div></div>
-          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
+          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setUltimateHintModal(true)}>Mở gợi ý tối thượng</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
           <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
@@ -168,8 +187,9 @@ function App() {
         </div>
       </header>
 
-      <section className="hint-grid" aria-label="Gợi ý">
+      <section className={`hint-grid ${showUltimateHint ? 'has-ultimate-hint' : ''}`} aria-label="Gợi ý">
         {[0, 1, 2].map((index) => <div key={index} className={`hint-card ${openedHints.includes(index) ? 'is-unlocked' : 'is-locked'}`} aria-label={openedHints.includes(index) ? `Gợi ý ${index + 1}: ${hintTexts[index]}` : `Gợi ý ${index + 1} đang khóa`}><span>{openedHints.includes(index) ? hintTexts[index] : '?'}</span></div>)}
+        {showUltimateHint && <button className={`hint-card ultimate-hint ${ultimateHintOpened ? 'is-unlocked' : ''}`} onClick={() => !ultimateHintOpened && setUltimateHintModal(true)} aria-label="Mở gợi ý tối thượng"><span>{ultimateHintOpened ? ultimateHintQuestion : 'Gợi ý tối thượng'}</span>{!ultimateHintOpened && <b>?</b>}</button>}
       </section>
 
       <section className="question-grid" aria-label="Bảng câu hỏi">
@@ -186,9 +206,9 @@ function App() {
               disabled={Boolean(result)}
             >
               {!isOpen && !isWrong && <span className="card-preview">{genericQuestionIcons[index]}</span>}
-              {isOpen && <span className="card-icon">{item.icon}</span>}
-              <strong className={isOpen ? 'revealed-answer' : ''}>{isOpen ? item.label : String(index + 1).padStart(2, '0')}</strong>
-              <small>{isOpen ? item.detail : isWrong ? 'Đáp án không đúng' : 'Câu hỏi'}</small>
+              {isOpen && <span className="card-icon">✓</span>}
+              <strong className={isOpen ? 'revealed-answer' : ''}>{isOpen ? '✓' : String(index + 1).padStart(2, '0')}</strong>
+              {isWrong && <small>Đáp án không đúng</small>}
             </button>
           )
         })}
@@ -214,16 +234,9 @@ function App() {
       {hintPrompt && (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
-            {!hintPrompt.choosing ? <>
-              <p className="modal-label">ĐỘI {hintPrompt.team === 'green' ? 'XANH' : 'ĐỎ'} ĐẠT MỐC {hintThreshold} ĐIỂM</p>
-              <h2>Bạn có muốn mở gợi ý?</h2>
-              <p className="modal-question">Điểm của đội vẫn được giữ nguyên dù bạn chọn phương án nào.</p>
-              <div className="modal-actions two-actions"><button className="wrong-action" onClick={() => setHintPrompt(null)}>Không</button><button className="green-action" onClick={() => setHintPrompt({ ...hintPrompt, choosing: true })}>Có, mở gợi ý</button></div>
-            </> : <>
-              <p className="modal-label">CHỌN MỘT GỢI Ý</p>
-              <h2>Mở ô nào?</h2>
-              <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); setHintPrompt(null) }}>?</button>)}</div>
-            </>}
+            <p className="modal-label">CHỌN MỘT GỢI Ý</p>
+            <h2>Mở ô nào?</h2>
+            <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); setHintPrompt(null) }}>?</button>)}</div>
           </section>
         </div>
       )}
@@ -239,17 +252,28 @@ function App() {
         </div>
       )}
 
-      {winnerModal && (
+      {ultimateHintModal && (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
-            <button className="close-modal" onClick={() => setWinnerModal(false)} aria-label="Đóng">×</button>
-            <p className="modal-label">KẾT QUẢ CÂU HỎI TỔNG THỂ</p>
-            <h2>Đội nào chiến thắng?</h2>
-            <p className="modal-question">Chọn đội trả lời đúng đáp án tổng thể.</p>
-            <div className="modal-actions two-actions"><button className="green-action" onClick={() => { setWinner('green'); setWinnerModal(false) }}>Đội Xanh chiến thắng</button><button className="red-action" onClick={() => { setWinner('red'); setWinnerModal(false) }}>Đội Đỏ chiến thắng</button></div>
+            <button className="close-modal" onClick={() => setUltimateHintModal(false)} aria-label="Đóng">×</button>
+            <p className="modal-label">GỢI Ý TỐI THƯỢNG</p>
+            <h2>{ultimateHintQuestion}</h2>
+            <p className="modal-question">Câu hỏi này tách biệt với thử thách tối thượng.</p>
+            <div className="modal-actions two-actions"><button className="wrong-action" onClick={() => setUltimateHintModal(false)}>Đóng</button><button className="green-action" onClick={() => { setUltimateHintOpened(true); setUltimateHintModal(false) }}>Mở gợi ý</button></div>
           </section>
         </div>
       )}
+
+      {winnerModal && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
+            <button className="close-modal" onClick={() => { setWinnerModal(false); setCountdown(null); setCountdownPaused(false); setCelebratingWinner(null) }} aria-label="Đóng">×</button>
+            {countdown !== null && countdown > 0 ? <div className="countdown-display" role="timer" aria-live="assertive"><span>THỜI GIAN CÒN LẠI</span><div className="countdown-value"><strong>{countdown}</strong><small>GIÂY</small></div><button className="pause-countdown-button" onClick={() => setCountdownPaused(!countdownPaused)}>{countdownPaused ? 'Tiếp tục' : 'Dừng'}</button></div> : <><p className="modal-label">THỬ THÁCH TỐI THƯỢNG</p><h2>{overallQuestion}</h2><p className="modal-question">Chọn đội trả lời đúng đáp án thử thách tối thượng.</p><div className="modal-actions winner-actions"><button className="countdown-button" onClick={() => { setCountdown(countdownDuration); setCountdownPaused(false) }}>{countdown === 0 ? 'Hết giờ — đếm lại' : 'Đếm giây'}</button><button className="green-action" onClick={() => { setWinner('green'); setWinnerModal(false); setCelebratingWinner('green') }}>Đội Xanh chiến thắng</button><button className="red-action" onClick={() => { setWinner('red'); setWinnerModal(false); setCelebratingWinner('red') }}>Đội Đỏ chiến thắng</button></div></>}
+          </section>
+        </div>
+      )}
+
+      {celebratingWinner && <div className="winner-overlay" role="dialog" aria-modal="true"><button className="close-modal" onClick={() => setCelebratingWinner(null)} aria-label="Đóng">×</button><div className={`winner-celebration ${celebratingWinner}`}><i className="firework firework-one" /><i className="firework firework-two" /><i className="firework firework-three" /><i className="firework firework-four" /><i className="firework firework-five" /><i className="firework firework-six" /><i className="firework firework-seven" /><i className="firework firework-eight" /><i className="firework firework-nine" /><i className="firework firework-ten" /><p>CHÚC MỪNG</p><h2>ĐỘI {celebratingWinner === 'green' ? 'XANH' : 'ĐỎ'} CHIẾN THẮNG!</h2><span>✦ ✦ ✦</span></div></div>}
 
       {isEditor && (
         <section className="editor-page" aria-label="Thiết lập câu hỏi">
@@ -261,8 +285,10 @@ function App() {
               {importMessage && <small>{importMessage}</small>}
             </section>
             <label className="field full-field">Câu hỏi tổng thể<input value={overallQuestion} onChange={(event) => setOverallQuestion(event.target.value)} /></label>
+            <label className="field full-field">Câu hỏi Gợi ý tối thượng<input value={ultimateHintQuestion} onChange={(event) => setUltimateHintQuestion(event.target.value)} /></label>
+            <label className="field full-field">Thời gian đếm ngược Thử thách tối thượng (giây)<input type="number" min="1" value={countdownDuration} onChange={(event) => setCountdownDuration(Math.max(1, Number(event.target.value) || 1))} /></label>
             <div className="hint-fields">{hintTexts.map((hint, index) => <label className="field" key={index}>Gợi ý {index + 1}<input value={hint} onChange={(event) => setHintTexts(hintTexts.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} /></label>)}</div>
-            <div className="editor-topics">{topics.map((topic, topicIndex) => <section className="editor-topic" key={topic}><header><span>CHỦ ĐỀ {String(topicIndex + 1).padStart(2, '0')}</span><h2>{topic}</h2><small>Câu {String(topicIndex * 2 + 1).padStart(2, '0')}–{String(topicIndex * 2 + 2).padStart(2, '0')}</small></header><div className="question-fields">{questionData.slice(topicIndex * 2, topicIndex * 2 + 2).map((item, relativeIndex) => { const index = topicIndex * 2 + relativeIndex; return <article className="edit-question" key={index}><b>{String(index + 1).padStart(2, '0')}</b><label className="field">Câu hỏi<input value={item.question} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, question: event.target.value } : value))} /></label><label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, imageUrl: event.target.value } : value))} /></label><label className="field">Đáp án khi mở ô<input value={item.label} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, label: event.target.value } : value))} /></label><label className="field">Mô tả<input value={item.detail} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, detail: event.target.value } : value))} /></label></article>})}</div></section>)}</div>
+            <div className="editor-topics">{topics.map((topic, topicIndex) => <section className="editor-topic" key={topic}><header><span>CHỦ ĐỀ {String(topicIndex + 1).padStart(2, '0')}</span><h2>{topic}</h2><small>Câu {String(topicIndex * 3 + 1).padStart(2, '0')}–{String(topicIndex * 3 + 3).padStart(2, '0')}</small></header><div className="question-fields">{questionData.slice(topicIndex * 3, topicIndex * 3 + 3).map((item, relativeIndex) => { const index = topicIndex * 3 + relativeIndex; return <article className="edit-question" key={index}><b>{String(index + 1).padStart(2, '0')}</b><label className="field">Câu hỏi<input value={item.question} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, question: event.target.value } : value))} /></label><label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, imageUrl: event.target.value } : value))} /></label><label className="field">Đáp án khi mở ô<input value={item.label} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, label: event.target.value } : value))} /></label><label className="field">Mô tả<input value={item.detail} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, detail: event.target.value } : value))} /></label></article>})}</div></section>)}</div>
           </div>
         </section>
       )}
