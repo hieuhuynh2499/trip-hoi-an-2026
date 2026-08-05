@@ -211,6 +211,30 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   background: linear-gradient(145deg, #8d2b3a, #5c1525);
 }
 
+.side-answer {
+  display: grid;
+  gap: 7px;
+  margin: 18px 0 0;
+  padding: 15px 16px;
+  border: 3px solid #fff0a3;
+  border-radius: 12px;
+  color: #5d2100;
+  background: linear-gradient(145deg, #ffdf63, #efa92b);
+  box-shadow: 0 4px 0 #b56814;
+}
+
+.side-answer span {
+  color: #7a1326;
+  font: 800 .68rem 'Be Vietnam Pro', sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.side-answer strong {
+  overflow-wrap: anywhere;
+  font: 800 clamp(1.05rem, 2.1vw, 1.5rem)/1.18 'Be Vietnam Pro', sans-serif;
+}
+
 .choice-editor {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
