@@ -79,41 +79,27 @@ const csvCell = (value) => {
 }
 
 const defaultQuestions = [
-  ['Cristiano Ronaldo giành bao nhiêu Quả Bóng Vàng?', '5', 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'],
-  ['Pelé đã vô địch World Cup bao nhiêu lần?', '3', 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211'],
-  ['Tuyển Việt Nam có vô địch Asian Cup 2024 không?', 'Không', 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55'],
-  ['Cầu thủ nào thường được gọi là “Messi Việt Nam”?', 'Nguyễn Quang Hải', 'https://images.unsplash.com/photo-1546519638-68e109498ffc'],
-  ['Kỳ quan cổ đại nào nằm ở Ai Cập?', 'Kim tự tháp Giza', 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e'],
-  ['Đấu trường nổi tiếng tại Rome tên là gì?', 'Colosseum', 'https://images.unsplash.com/photo-1552832230-c0197dd311b5'],
-  ['Vị vua đầu tiên của nước Âu Lạc là ai?', 'An Dương Vương', 'https://images.unsplash.com/photo-1524661135-423995f22d0b'],
-  ['Thành cổ nổi tiếng ở Đông Anh, Hà Nội?', 'Cổ Loa', 'https://images.unsplash.com/photo-1521292270410-a8c4d716d518'],
-  ['Nghệ thuật kể chuyện qua hình ảnh trên màn ảnh?', 'Điện ảnh', 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba'],
-  ['Loại hình biểu diễn trên sân khấu có diễn viên?', 'Kịch', 'https://images.unsplash.com/photo-1503095396549-807759245b45'],
-  ['Tượng vàng dành cho phim xuất sắc của Hollywood?', 'Oscar', 'https://images.unsplash.com/photo-1534190239940-9ba8944ea261'],
-  ['Thiết bị quen thuộc để xem chương trình tại nhà?', 'Truyền hình', 'https://images.unsplash.com/photo-1593784991095-a205069470b6'],
-  ['Nhạc cụ có sáu dây phổ biến?', 'Guitar', 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1'],
-  ['Thiết bị dùng để thu và khuếch đại giọng hát?', 'Micro', 'https://images.unsplash.com/photo-1516280440614-37939bbacd81'],
-  ['Thiết bị nghe nhạc đeo ở tai?', 'Tai nghe', 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e'],
-  ['Nhạc cụ gõ gồm nhiều mặt trống?', 'Trống', 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f'],
+  ['Đội nào có nhiều bàn thắng hơn sẽ giành chiến thắng?', 'Đội có số bàn thắng cao hơn', ''],
+  ['Một trận bóng đá thông thường có bao nhiêu hiệp?', '2 hiệp', ''],
+  ['Môn thể thao nào dùng vợt và cầu lông?', 'Cầu lông', ''],
+  ['Hội An thuộc tỉnh nào?', 'Quảng Nam', ''],
+  ['Phố cổ Hội An nổi tiếng với loại đèn nào?', 'Đèn lồng', ''],
+  ['Hội An từng là một thương cảng phát triển vào thế kỷ nào?', 'Thế kỷ XVI–XVII', ''],
+  ['Hoạt động nào thường diễn ra trong một lễ hội?', 'Biểu diễn và trò chơi', ''],
+  ['Một chuyến đi chơi cùng đồng đội cần điều gì nhất?', 'Tinh thần hợp tác', ''],
+  ['Đèn lồng Hội An thường được thắp vào buổi nào?', 'Buổi tối', ''],
+  ['Nhạc cụ nào có sáu dây phổ biến?', 'Đàn guitar', ''],
+  ['Âm nhạc thường giúp tạo ra điều gì trong sự kiện?', 'Không khí sôi động', ''],
+  ['Nhạc cụ nào được gõ bằng dùi?', 'Trống', ''],
 ]
 
-const defaultQuestionIndexes = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14]
-
-const createDefaultQuestionData = () => defaultQuestionIndexes.map((sourceIndex, index) => {
-  const [question, label, imageUrl] = defaultQuestions[sourceIndex]
+const createDefaultQuestionData = () => defaultQuestions.map(([question, label, imageUrl], index) => {
   return createQuestion({
     question,
     label,
     imageUrl,
-    detail: 'Câu hỏi',
+    detail: topics[Math.floor(index / 3)] || 'Câu hỏi',
     icon: genericQuestionIcons[index],
-    ...(index === 0
-      ? {
-        questionType: QUESTION_TYPE_MULTIPLE,
-        choices: ['3', '4', '5', '6'],
-        correctChoiceIndex: 2,
-      }
-      : {}),
   })
 })
 
