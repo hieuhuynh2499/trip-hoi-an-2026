@@ -114,9 +114,14 @@ const defaultSideQuestions = [
   { question: 'Làm gì mà không phát ra tiếng?', answer: 'Làm thinh.' },
 ]
 
-const getNextSideQuestionIndex = (usedIndexes = []) => {
+const normalizeSideQuestion = ({ question, answer }) => ({
+  question: cleanText(question),
+  answer: cleanText(answer),
+})
+
+const getNextSideQuestionIndex = (sideQuestions, usedIndexes = []) => {
   const used = new Set(usedIndexes)
-  const nextIndex = defaultSideQuestions.findIndex((_, index) => !used.has(index))
+  const nextIndex = sideQuestions.findIndex((_, index) => !used.has(index))
   return nextIndex >= 0 ? nextIndex : 0
 }
 
@@ -169,6 +174,7 @@ function App() {
   const [openedHints, setOpenedHints] = useState([])
   const [hintOwners, setHintOwners] = useState({})
   const [hintPrompt, setHintPrompt] = useState(null)
+  const [sideQuestions, setSideQuestions] = useState(defaultSideQuestions)
   const [usedSideQuestionIndexes, setUsedSideQuestionIndexes] = useState([])
   const [revealedSideAnswer, setRevealedSideAnswer] = useState(false)
   const [promptedMilestones, setPromptedMilestones] = useState({})
@@ -181,6 +187,7 @@ function App() {
   const [countdown, setCountdown] = useState(null)
   const [hintThreshold, setHintThreshold] = useState(2)
   const [importMessage, setImportMessage] = useState('')
+  const [sideImportMessage, setSideImportMessage] = useState('')
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(null)
   const greenScore = Object.values(results).filter((result) => result === 'green').length
   const redScore = Object.values(results).filter((result) => result === 'red').length
@@ -200,7 +207,7 @@ function App() {
     setRevealedSideAnswer(false)
     setHintPrompt({
       team,
-      sideQuestionIndex: getNextSideQuestionIndex(usedSideQuestionIndexes),
+      sideQuestionIndex: getNextSideQuestionIndex(sideQuestions, usedSideQuestionIndexes),
       sideQuestionCleared: false,
     })
   }
@@ -360,6 +367,46 @@ function App() {
     reader.readAsText(file, 'utf-8')
   }
 
+  const importSideQuestions = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const rows = parseCsv(String(reader.result || ''))
+      const header = rows.shift()?.map(normalizeHeaderName) || []
+      const column = (names) => header.findIndex((name) => names.includes(name))
+      const questionColumn = column(['question', 'cauhoi'])
+      const answerColumn = column(['answer', 'dapan'])
+
+      if (questionColumn < 0 || answerColumn < 0) {
+        setSideImportMessage('CSV câu hỏi phụ cần có cột question, answer hoặc cauhoi, dapan.')
+        event.target.value = ''
+        return
+      }
+
+      const importedSideQuestions = rows
+        .map((row) => normalizeSideQuestion({
+          question: row[questionColumn],
+          answer: row[answerColumn],
+        }))
+        .filter((item) => item.question && item.answer)
+
+      if (!importedSideQuestions.length) {
+        setSideImportMessage('Không tìm thấy câu hỏi phụ hợp lệ trong file CSV.')
+        event.target.value = ''
+        return
+      }
+
+      setSideQuestions(importedSideQuestions)
+      setUsedSideQuestionIndexes([])
+      setRevealedSideAnswer(false)
+      setHintPrompt((current) => (current ? { ...current, sideQuestionIndex: 0, sideQuestionCleared: false } : current))
+      setSideImportMessage(`Đã nhập ${importedSideQuestions.length} câu hỏi phụ.`)
+      event.target.value = ''
+    }
+    reader.readAsText(file, 'utf-8')
+  }
+
   return (
     <main className="game-shell">
       <header className="game-header">
@@ -450,7 +497,7 @@ function App() {
 
       {hintPrompt && (() => {
         const sideQuestionIndex = Number.isInteger(hintPrompt.sideQuestionIndex) ? hintPrompt.sideQuestionIndex : 0
-        const sideQuestion = defaultSideQuestions[sideQuestionIndex]
+        const sideQuestion = sideQuestions[sideQuestionIndex] || sideQuestions[0] || defaultSideQuestions[0]
         if (!hintPrompt.sideQuestionCleared) {
           return (
             <div className="modal-backdrop" role="presentation">
@@ -514,6 +561,13 @@ function App() {
                 <label className="csv-upload">Chọn file CSV<input type="file" accept=".csv,text/csv" onChange={importQuestions} /></label>
               </div>
               {importMessage && <small>{importMessage}</small>}
+            </section>
+            <section className="csv-import">
+              <div><span>CÂU HỎI PHỤ</span><h2>Import câu hỏi phụ từ CSV</h2><p>Dùng các cột: <b>question, answer</b>. Có thể dùng tên cột tiếng Việt <b>cauhoi, dapan</b>. Danh sách này chỉ dùng cho luồng mở gợi ý.</p></div>
+              <div className="csv-actions">
+                <label className="csv-upload">Chọn CSV phụ<input type="file" accept=".csv,text/csv" onChange={importSideQuestions} /></label>
+              </div>
+              <small>{sideImportMessage || `Đang có ${sideQuestions.length} câu hỏi phụ.`}</small>
             </section>
             <label className="field full-field">Câu hỏi tổng thể<input value={overallQuestion} onChange={(event) => setOverallQuestion(event.target.value)} /></label>
             <label className="field full-field">Thời gian đếm ngược Thử thách tối thượng (giây)<input type="number" min="1" value={countdownDuration} onChange={(event) => setCountdownDuration(Math.max(1, Number(event.target.value) || 1))} /></label>
