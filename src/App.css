@@ -10,7 +10,7 @@
 .question-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.question-card{min-height:126px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:2px solid #d6ebff;border-radius:11px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#1d74f1,#0a3b94 52%,#071c51);box-shadow:inset 0 1px #ffffff42,inset 0 -18px 30px #00123e88,0 8px 16px #0000003d;transition:transform .18s,border-color .18s,box-shadow .18s}.question-card::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,#fff2,transparent 34%);pointer-events:none}.question-card:hover:not(:disabled){transform:translateY(-4px) scale(1.01);border-color:#fff;box-shadow:inset 0 1px #fff8,0 14px 28px #00000061}.question-card:focus-visible{outline:3px solid #fff;outline-offset:3px}.question-card strong{position:relative;z-index:1;white-space:pre-line;font:700 clamp(1.8rem,3vw,2.85rem)/.9 'Barlow Condensed',sans-serif;letter-spacing:.02em;text-shadow:0 4px 8px #0009}.card-icon{position:relative;z-index:1;margin-right:7px;font:600 2rem/.8 'Barlow Condensed',sans-serif}.question-card small{position:absolute;bottom:11px;left:12px;right:12px;z-index:1;color:#c7e0ff;font-size:.63rem;text-align:center}.question-card.is-open{background:linear-gradient(135deg,#1887ff,#1155bd 55%,#0a276f);cursor:default}.question-card.is-wrong{border-color:#7084a0;background:linear-gradient(135deg,#33445e,#172238);opacity:.47;filter:grayscale(.8);cursor:not-allowed}
 .topic-toolbar{position:relative;z-index:1;max-width:1320px;margin:0 auto 10px;display:flex;align-items:center;gap:12px;color:#dcecff;font-size:.78rem}.topic-toolbar button{border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:#dcecff;background:#0b2c6d;cursor:pointer}.topic-toolbar span{color:#92b9e8;font-size:.7rem}.topic-grid{grid-template-columns:repeat(2,1fr);max-width:940px}.topic-card{min-height:185px;flex-direction:column;gap:12px;background:linear-gradient(135deg,#164bb7,#08265f 58%,#05183f)}.topic-card small{position:static;color:#9fcbff;font-size:.68rem;letter-spacing:.12em}.topic-card span{position:relative;z-index:1;color:#a9d5ff;font-size:.76rem}
 footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-spacing:.04em}footer span{margin:0 8px;color:#d7e8ff}
-.modal-backdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#010821cc;backdrop-filter:blur(10px)}.answer-modal{width:min(50vw,760px);max-height:80vh;overflow:auto;position:relative;padding:34px;border:1px solid #83c7ff;border-radius:20px;color:#eff8ff;background:linear-gradient(145deg,#105ac6,#061a4d);box-shadow:0 28px 80px #000c}.modal-label{margin:0 0 13px;color:#a5d4ff;font-size:.7rem;font-weight:700;letter-spacing:.15em}.answer-modal h2{margin:0;font:600 clamp(2rem,5vw,3rem)/.92 'Barlow Condensed',sans-serif;letter-spacing:.02em}.modal-question{margin:18px 0 25px;color:#c7defb;font-size:.87rem;line-height:1.55}.close-modal{position:absolute;top:12px;right:15px;border:0;background:transparent;color:#e4f3ff;font-size:2rem;line-height:1;cursor:pointer}.modal-actions{display:grid;grid-template-columns:1fr 1.35fr 1.35fr;gap:9px}.modal-actions button{min-height:46px;border:0;border-radius:9px;color:#fff;font:700 .78rem 'Be Vietnam Pro',sans-serif;cursor:pointer}.wrong-action{background:#647187}.green-action{background:#0ca873;box-shadow:0 8px 16px #002c21}.red-action{background:#e44559;box-shadow:0 8px 16px #400610}.two-actions{grid-template-columns:1fr 1.5fr}.hint-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:25px}.hint-picker button{height:100px;border:1px solid #75c5ff;border-radius:12px;color:#e8f5ff;background:#0a3477;font:700 3rem/.8 'Barlow Condensed',sans-serif;cursor:pointer}.hint-picker button:disabled{opacity:.3;cursor:not-allowed}
+.modal-backdrop{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:#010821cc;backdrop-filter:blur(10px)}.answer-modal{width:min(50vw,760px);max-height:80vh;overflow:auto;position:relative;padding:34px;border:1px solid #83c7ff;border-radius:20px;color:#eff8ff;background:linear-gradient(145deg,#105ac6,#061a4d);box-shadow:0 28px 80px #000c}.modal-label{margin:0 0 13px;color:#a5d4ff;font-size:.7rem;font-weight:700;letter-spacing:.15em}.answer-modal h2{margin:0;font:600 clamp(2rem,5vw,3rem)/.92 'Barlow Condensed',sans-serif;letter-spacing:.02em}.modal-question{margin:18px 0 25px;color:#c7defb;font-size:.87rem;line-height:1.55}.close-modal{position:absolute;top:12px;right:15px;border:0;background:transparent;color:#e4f3ff;font-size:2rem;line-height:1;cursor:pointer}.modal-actions{display:grid;grid-template-columns:1fr 1.35fr 1.35fr;gap:9px}.modal-actions button{min-height:46px;border:0;border-radius:9px;color:#fff;font:700 .78rem 'Be Vietnam Pro',sans-serif;cursor:pointer}.wrong-action{background:#647187}.green-action{background:#0ca873;box-shadow:0 8px 16px #002c21}.red-action{background:#e44559;box-shadow:0 8px 16px #400610}.hint-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:25px}.hint-picker button{height:100px;border:1px solid #75c5ff;border-radius:12px;color:#e8f5ff;background:#0a3477;font:700 3rem/.8 'Barlow Condensed',sans-serif;cursor:pointer}.hint-picker button:disabled{opacity:.3;cursor:not-allowed}
 .question-image{width:100%;height:auto;max-height:280px;display:block;object-fit:contain;object-position:center;margin:18px 0 0;border:1px solid #72bdfc;border-radius:10px;background:#071a47}
 .editor-page{position:fixed;inset:0;z-index:30;overflow:auto;padding:30px clamp(18px,5vw,72px);color:#eaf5ff;background:radial-gradient(circle at 92% 0,#2473dc,transparent 32%),linear-gradient(135deg,#031440,#071e59)}.editor-header{max-width:1180px;margin:0 auto 24px;display:flex;justify-content:space-between;align-items:center}.editor-form{max-width:1180px;margin:auto}.field{display:flex;flex-direction:column;gap:7px;color:#a8ceff;font-size:.68rem;font-weight:700;letter-spacing:.07em}.field input{width:100%;border:1px solid #4d8ad7;border-radius:8px;padding:11px;color:#eff7ff;background:#082a64;font:400 .84rem 'Be Vietnam Pro',sans-serif;letter-spacing:0}.full-field{margin-bottom:14px}.hint-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.editor-topics{display:grid;gap:20px}.editor-topic{padding:18px;border:1px solid #4c82c9;border-radius:14px;background:#061c4caa}.editor-topic header{display:flex;align-items:baseline;gap:10px;margin:0 0 14px}.editor-topic header span{color:#84c2ff;font-size:.65rem;font-weight:700;letter-spacing:.12em}.editor-topic h2{margin:0;color:#fff;font:600 1.8rem 'Barlow Condensed',sans-serif}.editor-topic small{margin-left:auto;color:#9bbce5;font-size:.7rem}.question-fields{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.edit-question{position:relative;display:flex;flex-direction:column;gap:11px;padding:15px 12px 13px;border:1px solid #386cae;border-radius:10px;background:#07245a}.edit-question b{align-self:flex-start;display:grid;place-items:center;width:34px;height:25px;border:1px solid #4e94df;border-radius:6px;color:#b9dcff;background:#0b3477;font:600 1.15rem 'Barlow Condensed',sans-serif}.edit-question .field{width:100%}.edit-question .field input{min-width:0;padding:9px;font-size:.76rem}
 @media(min-width:761px) and (min-height:700px){.game-shell{height:100vh;overflow:hidden}.overview>div,.overview>button{min-height:92px}.question-card{min-height:calc((100vh - 360px) / 3)}}
@@ -112,7 +112,130 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   min-height: clamp(88px, 10vh, 108px);
 }
 
-.hint-grid.has-ultimate-hint { grid-template-columns: repeat(4, 1fr); }
-.ultimate-hint { position: relative; justify-items: center; padding: 12px; text-align: center; background: linear-gradient(145deg, #f2c94c, #b86b14); cursor: pointer; }
-.ultimate-hint span { color: #4f2500; font: 800 clamp(.72rem, 1.1vw, .95rem)/1.2 'Be Vietnam Pro', sans-serif; }
-.ultimate-hint b { position: absolute; right: 14px; top: 11px; color: #fff7d8; font-size: 1.25rem; }
+.setup-button:disabled,
+.setup-button:disabled:hover {
+  cursor: not-allowed;
+  opacity: .45;
+  transform: none;
+  filter: none;
+}
+
+.field select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #ffdc65;
+  border-radius: 8px;
+  padding: 9px;
+  color: #641229;
+  background: #fff8e9;
+  font: 600 .76rem 'Be Vietnam Pro', sans-serif;
+  letter-spacing: 0;
+}
+
+.csv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.csv-export,
+.csv-upload {
+  min-width: 138px;
+}
+
+.csv-export {
+  display: grid;
+  place-items: center;
+  padding: 12px 16px;
+  border: 2px solid #fff8d7;
+  border-radius: 8px;
+  color: #fff9df;
+  font: 700 .72rem 'Be Vietnam Pro', sans-serif;
+  background: linear-gradient(180deg, #0c75c7, #06499e);
+  cursor: pointer;
+}
+
+.choice-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 18px 0 0;
+}
+
+.choice-option {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  border: 3px solid #fff0a3;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #fff9df;
+  text-align: left;
+  background: linear-gradient(145deg, #0a67b5, #073a88);
+  box-shadow: 0 4px 0 #052d6a;
+  cursor: pointer;
+}
+
+.choice-option span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #7a1326;
+  background: #ffd84d;
+  font: 800 .9rem 'Be Vietnam Pro', sans-serif;
+}
+
+.choice-option strong {
+  overflow-wrap: anywhere;
+  font: 800 clamp(1rem, 2vw, 1.35rem)/1.12 'Be Vietnam Pro', sans-serif;
+}
+
+.choice-option.is-selected {
+  transform: translateY(-2px);
+  border-color: #ffffff;
+  box-shadow: 0 6px 0 #052d6a, 0 0 0 3px #fff3b055;
+}
+
+.choice-option.is-correct {
+  background: linear-gradient(145deg, #0a9d6e, #05644f);
+}
+
+.choice-option.is-incorrect {
+  background: linear-gradient(145deg, #8d2b3a, #5c1525);
+}
+
+.choice-editor {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.correct-choice-field {
+  grid-column: 1 / -1;
+}
+
+@media(max-width:820px) {
+  .csv-import {
+    grid-template-columns: 1fr;
+  }
+
+  .csv-actions {
+    justify-content: stretch;
+  }
+
+  .csv-actions > * {
+    flex: 1 1 160px;
+  }
+
+  .choice-list,
+  .choice-editor {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,33 +1,85 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-
-const questions = [
-  { label: 'Ổ dầu', detail: 'Một địa danh giàu tài nguyên', icon: '✦' },
-  { label: 'Di tích quốc gia\nđặc biệt', detail: 'Dấu ấn lịch sử nổi bật', icon: '⌁' },
-  { label: '3.750.000', detail: 'Một con số đặc biệt', icon: '◎' },
-  { label: 'Cấu trúc\nđộc đáo', detail: 'Khám phá kiến trúc', icon: '◇' },
-  { label: 'Đất', detail: 'Nơi khởi đầu hành trình', icon: '◒' },
-  { label: 'Kinh đô', detail: 'Trung tâm của một thời', icon: '♜' },
-  { label: 'Nước Âu Lạc', detail: 'Một vương quốc cổ', icon: '≈' },
-  { label: 'Tòa thành', detail: 'Bí ẩn qua nhiều thế kỷ', icon: '▦' },
-  { label: 'Đông Anh,\nHà Nội', detail: 'Điểm đến của câu chuyện', icon: '⌖' },
-  { label: 'Vòng thành', detail: 'Dấu vết của một hệ thống phòng thủ', icon: '◌' },
-  { label: 'Nỏ thần', detail: 'Truyền thuyết gắn với thành cổ', icon: '➹' },
-  { label: 'An Dương Vương', detail: 'Vị vua gắn với vùng đất này', icon: '♛' },
-]
+import { getNextUnpromptedHintMilestone } from './hintMilestones'
 
 const topics = ['Thể thao', 'Lịch sử', 'Giải trí', 'Âm nhạc']
-const topicIcons = [
-  ['⚽', '🏆', '🥇', '🎯'],
-  ['🏛️', '📜', '🛡️', '⌛'],
-  ['🎬', '🎭', '📺', '🌟'],
-  ['🎵', '🎤', '🎸', '🎧'],
-]
-
 const genericQuestionIcons = ['✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆']
+const QUESTION_TYPE_SINGLE = 'single'
+const QUESTION_TYPE_MULTIPLE = 'multiple'
+const MULTIPLE_CHOICE_COUNT = 4
+const choiceLetters = ['A', 'B', 'C', 'D']
+const questionTypeLabels = {
+  [QUESTION_TYPE_SINGLE]: 'Một đáp án',
+  [QUESTION_TYPE_MULTIPLE]: 'Trắc nghiệm',
+}
+
+const cleanText = (value) => String(value ?? '').trim()
+const foldVietnameseText = (value) => cleanText(value)
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+const normalizeForCompare = (value) => foldVietnameseText(value)
+const normalizeHeaderName = (value) => foldVietnameseText(value).replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')
+
+const normalizeChoices = (choices = [], fallbackAnswer = '') => {
+  const normalized = Array.from({ length: MULTIPLE_CHOICE_COUNT }, (_, index) => cleanText(choices[index]))
+  if (!normalized.some(Boolean) && fallbackAnswer) normalized[0] = cleanText(fallbackAnswer)
+  return normalized
+}
+
+const normalizeCorrectChoiceIndex = (index) => {
+  const numericIndex = Number(index)
+  return Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < MULTIPLE_CHOICE_COUNT ? numericIndex : 0
+}
+
+const parseQuestionType = (value, fallback = QUESTION_TYPE_SINGLE) => {
+  const normalized = normalizeHeaderName(value)
+  if (!normalized) return fallback
+  if (['multiple', 'multiplechoice', 'mcq', 'tracnghiem'].includes(normalized)) return QUESTION_TYPE_MULTIPLE
+  return QUESTION_TYPE_SINGLE
+}
+
+const parseCorrectChoiceIndex = (value, choices, fallbackIndex = 0) => {
+  const normalized = normalizeForCompare(value)
+  const numericChoice = Number(normalized)
+  if (Number.isInteger(numericChoice) && numericChoice >= 1 && numericChoice <= MULTIPLE_CHOICE_COUNT) return numericChoice - 1
+  const letterIndex = choiceLetters.findIndex((letter) => letter.toLowerCase() === normalized)
+  if (letterIndex >= 0) return letterIndex
+  const matchingIndex = choices.findIndex((choice) => normalizeForCompare(choice) === normalized)
+  return matchingIndex >= 0 ? matchingIndex : normalizeCorrectChoiceIndex(fallbackIndex)
+}
+
+const getQuestionAnswer = (item) => {
+  if (item.questionType !== QUESTION_TYPE_MULTIPLE) return cleanText(item.label)
+  const choices = normalizeChoices(item.choices, item.label)
+  return choices[normalizeCorrectChoiceIndex(item.correctChoiceIndex)] || cleanText(item.label)
+}
+
+const createQuestion = ({ question, label, imageUrl, detail, icon, questionType = QUESTION_TYPE_SINGLE, choices, correctChoiceIndex = 0 }) => {
+  const normalizedQuestionType = questionType === QUESTION_TYPE_MULTIPLE ? QUESTION_TYPE_MULTIPLE : QUESTION_TYPE_SINGLE
+  const normalizedChoices = normalizeChoices(choices, label)
+  const normalizedCorrectChoiceIndex = normalizeCorrectChoiceIndex(correctChoiceIndex)
+  const answer = normalizedQuestionType === QUESTION_TYPE_MULTIPLE ? normalizedChoices[normalizedCorrectChoiceIndex] || cleanText(label) : cleanText(label)
+  return {
+    question,
+    label: answer,
+    imageUrl,
+    detail,
+    icon,
+    questionType: normalizedQuestionType,
+    choices: normalizedChoices,
+    correctChoiceIndex: normalizedCorrectChoiceIndex,
+  }
+}
+
+const csvCell = (value) => {
+  const text = String(value ?? '')
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
 
 const defaultQuestions = [
-  ['Cristiano Ronaldo đã giành bao nhiêu Quả bóng vàng?', '5', 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'],
+  ['Cristiano Ronaldo giành bao nhiêu Quả Bóng Vàng?', '5', 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg'],
   ['Pelé đã vô địch World Cup bao nhiêu lần?', '3', 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211'],
   ['Tuyển Việt Nam có vô địch Asian Cup 2024 không?', 'Không', 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55'],
   ['Cầu thủ nào thường được gọi là “Messi Việt Nam”?', 'Nguyễn Quang Hải', 'https://images.unsplash.com/photo-1546519638-68e109498ffc'],
@@ -73,11 +125,22 @@ const parseCsv = (text) => {
 function App() {
   const [questionData, setQuestionData] = useState(defaultQuestionIndexes.map((sourceIndex, index) => {
     const [question, label, imageUrl] = defaultQuestions[sourceIndex]
-    const topicIndex = Math.floor(index / 2)
-    return { question, label, imageUrl, detail: 'Câu hỏi', icon: genericQuestionIcons[index] }
+    return createQuestion({
+      question,
+      label,
+      imageUrl,
+      detail: 'Câu hỏi',
+      icon: genericQuestionIcons[index],
+      ...(index === 0
+        ? {
+          questionType: QUESTION_TYPE_MULTIPLE,
+          choices: ['3', '4', '5', '6'],
+          correctChoiceIndex: 2,
+        }
+        : {}),
+    })
   }))
   const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
-  const [ultimateHintQuestion, setUltimateHintQuestion] = useState('Gợi ý nào sẽ giúp các đội giải đáp thử thách tối thượng?')
   const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới'])
   const [isEditor, setIsEditor] = useState(false)
   const [results, setResults] = useState({})
@@ -90,20 +153,19 @@ function App() {
   const [winner, setWinner] = useState(null)
   const [winnerModal, setWinnerModal] = useState(false)
   const [celebratingWinner, setCelebratingWinner] = useState(null)
-  const [ultimateHintModal, setUltimateHintModal] = useState(false)
-  const [ultimateHintOpened, setUltimateHintOpened] = useState(false)
   const [countdownPaused, setCountdownPaused] = useState(false)
   const [countdownDuration, setCountdownDuration] = useState(20)
   const [countdown, setCountdown] = useState(null)
   const [hintThreshold, setHintThreshold] = useState(2)
   const [importMessage, setImportMessage] = useState('')
+  const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(null)
   const greenScore = Object.values(results).filter((result) => result === 'green').length
   const redScore = Object.values(results).filter((result) => result === 'red').length
   const revealedCount = Object.values(results).filter((result) => result === 'green' || result === 'red').length
   const greenHints = Object.values(hintOwners).filter((team) => team === 'green').length
   const redHints = Object.values(hintOwners).filter((team) => team === 'red').length
   const priorityTeam = greenHints === redHints ? null : greenHints > redHints ? 'green' : 'red'
-  const showUltimateHint = Math.max(greenScore, redScore) >= 5 || ultimateHintOpened
+  const hasAvailableHints = openedHints.length < 3
 
   useEffect(() => {
     if (countdown === null || countdown <= 0 || countdownPaused) return undefined
@@ -114,20 +176,69 @@ function App() {
   const markAnswer = (result) => {
     setResults({ ...results, [selected]: result })
     setSelected(null)
+    setSelectedChoiceIndex(null)
     if (result === 'green' || result === 'red') {
       const currentScore = Object.values(results).filter((value) => value === result).length
       const nextScore = currentScore + 1
+      const currentTotalScore = Object.values(results).filter((value) => value === 'green' || value === 'red').length
+      const nextTotalScore = currentTotalScore + 1
       if (nextScore === 6) {
         setWinner(result)
         setCelebratingWinner(result)
         return
       }
-      const milestoneKey = `${result}-${nextScore}`
-      if (nextScore % hintThreshold === 0 && !promptedMilestones[milestoneKey] && openedHints.length < 3) {
-        setPromptedMilestones({ ...promptedMilestones, [milestoneKey]: true })
+      const hintMilestone = getNextUnpromptedHintMilestone({
+        totalScore: nextTotalScore,
+        hintThreshold,
+        promptedMilestones,
+      })
+      if (hintMilestone !== null && openedHints.length < 3) {
+        setPromptedMilestones({ ...promptedMilestones, [hintMilestone]: true })
         setHintPrompt({ team: result })
       }
     }
+  }
+
+  const updateQuestion = (index, patch) => {
+    setQuestionData((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? createQuestion({ ...item, ...patch }) : item
+    )))
+  }
+
+  const updateQuestionChoice = (questionIndex, choiceIndex, choice) => {
+    setQuestionData((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== questionIndex) return item
+      const choices = normalizeChoices(item.choices, item.label).map((value, index) => (index === choiceIndex ? choice : value))
+      return createQuestion({ ...item, choices })
+    }))
+  }
+
+  const exportQuestions = () => {
+    const headers = ['number', 'topic', 'type', 'question', 'answer', 'correctChoice', 'choiceA', 'choiceB', 'choiceC', 'choiceD', 'imageUrl', 'detail']
+    const rows = questionData.map((item, index) => {
+      const choices = normalizeChoices(item.choices, item.label)
+      const questionType = item.questionType === QUESTION_TYPE_MULTIPLE ? QUESTION_TYPE_MULTIPLE : QUESTION_TYPE_SINGLE
+      return [
+        index + 1,
+        topics[Math.floor(index / 3)] || '',
+        questionTypeLabels[questionType],
+        item.question,
+        getQuestionAnswer(item),
+        questionType === QUESTION_TYPE_MULTIPLE ? choiceLetters[normalizeCorrectChoiceIndex(item.correctChoiceIndex)] : '',
+        ...choices,
+        item.imageUrl,
+        item.detail,
+      ]
+    })
+    const csv = [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n')
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'trip-2026-questions.csv'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    setImportMessage('Đã xuất file CSV có đủ dữ liệu trắc nghiệm.')
   }
 
   const importQuestions = (event) => {
@@ -136,7 +247,7 @@ function App() {
     const reader = new FileReader()
     reader.onload = () => {
       const rows = parseCsv(String(reader.result || ''))
-      const header = rows.shift()?.map((value) => value.toLowerCase().replace(/\s+/g, '')) || []
+      const header = rows.shift()?.map(normalizeHeaderName) || []
       const column = (names, fallback) => {
         const position = header.findIndex((name) => names.includes(name))
         return position >= 0 ? position : fallback
@@ -147,6 +258,18 @@ function App() {
       const answerColumn = column(['answer', 'dapan'], 2)
       const imageColumn = column(['imageurl', 'image', 'urlhinh'], 3)
       const detailColumn = column(['detail', 'mota'], 4)
+      const typeColumn = column(['type', 'questiontype', 'loai', 'loaicauhoi'], -1)
+      const choicesColumn = column(['choices', 'options', 'luachon', 'phuongan'], -1)
+      const correctColumn = column(['correctchoice', 'correctanswer', 'correct', 'dapandung', 'luachondung'], -1)
+      const choiceColumns = choiceLetters.map((letter, index) => column([
+        `choice${letter.toLowerCase()}`,
+        `option${letter.toLowerCase()}`,
+        `choice${index + 1}`,
+        `option${index + 1}`,
+        `luachon${index + 1}`,
+        `phuongan${index + 1}`,
+        `dapan${letter.toLowerCase()}`,
+      ], -1))
       const next = [...questionData]
       const topicPositions = {}
       let imported = 0
@@ -157,12 +280,30 @@ function App() {
         if (topicIndex >= 0) topicPositions[topicIndex] = (topicPositions[topicIndex] || 0) + 1
         const declaredIndex = numberColumn >= 0 ? Number(row[numberColumn]) - 1 : fallbackIndex
         if (!Number.isInteger(declaredIndex) || declaredIndex < 0 || declaredIndex >= next.length || !row[questionColumn]) return
+        const current = next[declaredIndex]
+        const readCell = (position) => (position >= 0 ? row[position] || '' : '')
+        const importedColumnChoices = choiceColumns.map(readCell)
+        const splitChoices = readCell(choicesColumn).split(/[;|]/).map(cleanText).filter(Boolean)
+        const hasImportedChoices = importedColumnChoices.some(Boolean) || splitChoices.length > 0
+        const answer = row[answerColumn] || getQuestionAnswer(current)
+        const choices = normalizeChoices(hasImportedChoices ? (importedColumnChoices.some(Boolean) ? importedColumnChoices : splitChoices) : current.choices, answer)
+        const questionType = typeColumn >= 0
+          ? parseQuestionType(row[typeColumn], current.questionType)
+          : hasImportedChoices ? QUESTION_TYPE_MULTIPLE : current.questionType
+        const correctChoiceIndex = questionType === QUESTION_TYPE_MULTIPLE
+          ? parseCorrectChoiceIndex(readCell(correctColumn) || answer, choices, current.correctChoiceIndex)
+          : normalizeCorrectChoiceIndex(current.correctChoiceIndex)
         next[declaredIndex] = {
-          ...next[declaredIndex],
+          ...createQuestion({
+            ...current,
           question: row[questionColumn],
-          label: row[answerColumn] || next[declaredIndex].label,
+            label: answer,
           imageUrl: row[imageColumn] || '',
-          detail: row[detailColumn] || (topicIndex >= 0 ? topics[topicIndex] : next[declaredIndex].detail),
+            detail: row[detailColumn] || (topicIndex >= 0 ? topics[topicIndex] : current.detail),
+            questionType,
+            choices,
+            correctChoiceIndex,
+          }),
         }
         imported += 1
       })
@@ -178,7 +319,7 @@ function App() {
       <header className="game-header">
         <div className="brand-line">
           <div className="matsuri-key-visual"><div className="matsuri-logos"><img className="ceyc-combined-logo" src={`${import.meta.env.BASE_URL}ceyc-matsuri-full.png`} alt="Logo CeYc Matsuri" /></div></div>
-          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setUltimateHintModal(true)}>Mở gợi ý tối thượng</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
+          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setHintPrompt({ team: null })} disabled={!hasAvailableHints}>Tự mở gợi ý</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
           <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
@@ -187,9 +328,8 @@ function App() {
         </div>
       </header>
 
-      <section className={`hint-grid ${showUltimateHint ? 'has-ultimate-hint' : ''}`} aria-label="Gợi ý">
+      <section className="hint-grid" aria-label="Gợi ý">
         {[0, 1, 2].map((index) => <div key={index} className={`hint-card ${openedHints.includes(index) ? 'is-unlocked' : 'is-locked'}`} aria-label={openedHints.includes(index) ? `Gợi ý ${index + 1}: ${hintTexts[index]}` : `Gợi ý ${index + 1} đang khóa`}><span>{openedHints.includes(index) ? hintTexts[index] : '?'}</span></div>)}
-        {showUltimateHint && <button className={`hint-card ultimate-hint ${ultimateHintOpened ? 'is-unlocked' : ''}`} onClick={() => !ultimateHintOpened && setUltimateHintModal(true)} aria-label="Mở gợi ý tối thượng"><span>{ultimateHintOpened ? ultimateHintQuestion : 'Gợi ý tối thượng'}</span>{!ultimateHintOpened && <b>?</b>}</button>}
       </section>
 
       <section className="question-grid" aria-label="Bảng câu hỏi">
@@ -197,31 +337,61 @@ function App() {
           const result = results[index]
           const isOpen = result === 'green' || result === 'red'
           const isWrong = result === 'wrong'
-          const hasLongAnswer = item.label.trim().length > 14
+          const revealedAnswer = getQuestionAnswer(item)
+          const hasLongAnswer = revealedAnswer.length > 14
           return (
             <button
               className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''} ${hasLongAnswer ? 'has-long-answer' : ''}`}
-              key={item.label}
-              onClick={() => !result && setSelected(index)}
+              data-testid={`question-card-${index + 1}`}
+              key={index}
+              onClick={() => { if (!result) { setSelected(index); setSelectedChoiceIndex(null) } }}
               disabled={Boolean(result)}
             >
               {!isOpen && !isWrong && <span className="card-preview">{genericQuestionIcons[index]}</span>}
               {isOpen && <span className="card-icon">✓</span>}
-              <strong className={isOpen ? 'revealed-answer' : ''}>{isOpen ? '✓' : String(index + 1).padStart(2, '0')}</strong>
+              <strong className={isOpen ? 'revealed-answer' : ''}>{isOpen ? revealedAnswer : String(index + 1).padStart(2, '0')}</strong>
               {isWrong && <small>Đáp án không đúng</small>}
             </button>
           )
         })}
       </section>
 
-      {selected !== null && (
+      {selected !== null && (() => {
+        const selectedQuestion = questionData[selected]
+        const isMultipleChoice = selectedQuestion.questionType === QUESTION_TYPE_MULTIPLE
+        const choices = normalizeChoices(selectedQuestion.choices, selectedQuestion.label)
+        const correctChoiceIndex = normalizeCorrectChoiceIndex(selectedQuestion.correctChoiceIndex)
+        const hasSelectedChoice = selectedChoiceIndex !== null
+        const selectedChoiceIsCorrect = selectedChoiceIndex === correctChoiceIndex
+        return (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
-            <button className="close-modal" onClick={() => setSelected(null)} aria-label="Đóng">×</button>
+            <button className="close-modal" onClick={() => { setSelected(null); setSelectedChoiceIndex(null) }} aria-label="Đóng">×</button>
             <p className="modal-label">CÂU HỎI {String(selected + 1).padStart(2, '0')}</p>
-            <h2 id="question-title">{questionData[selected].question}</h2>
-            {questionData[selected].imageUrl && <img className="question-image" src={questionData[selected].imageUrl} alt="Hình minh họa câu hỏi" />}
-            <p className="modal-question">Hãy nghe phần trả lời của người chơi, sau đó chọn kết quả chấm.</p>
+            <h2 id="question-title">{selectedQuestion.question}</h2>
+            {selectedQuestion.imageUrl && <img className="question-image" src={selectedQuestion.imageUrl} alt="Hình minh họa câu hỏi" />}
+            {isMultipleChoice && (
+              <div className="choice-list" aria-label="Lựa chọn trắc nghiệm">
+                {choices.map((choice, choiceIndex) => {
+                  const isSelectedChoice = selectedChoiceIndex === choiceIndex
+                  return (
+                    <button
+                      className={`choice-option ${isSelectedChoice ? 'is-selected' : ''} ${isSelectedChoice && selectedChoiceIsCorrect ? 'is-correct' : ''} ${isSelectedChoice && !selectedChoiceIsCorrect ? 'is-incorrect' : ''}`}
+                      data-testid={`choice-option-${choiceLetters[choiceIndex].toLowerCase()}`}
+                      data-choice-value={choice}
+                      key={choiceLetters[choiceIndex]}
+                      type="button"
+                      aria-pressed={isSelectedChoice}
+                      onClick={() => setSelectedChoiceIndex(choiceIndex)}
+                    >
+                      <span>{choiceLetters[choiceIndex]}</span>
+                      <strong>{choice || `Lựa chọn ${choiceIndex + 1}`}</strong>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <p className="modal-question">{isMultipleChoice ? (hasSelectedChoice ? `Đã chọn ${choiceLetters[selectedChoiceIndex]}. ${choices[selectedChoiceIndex] || `Lựa chọn ${selectedChoiceIndex + 1}`}${selectedChoiceIsCorrect ? ' — đáp án đúng.' : ` — đáp án đúng là ${getQuestionAnswer(selectedQuestion)}.`}` : 'Chọn một trong bốn đáp án, sau đó chọn kết quả chấm.') : 'Hãy nghe phần trả lời của người chơi, sau đó chọn kết quả chấm.'}</p>
             <div className="modal-actions">
               <button className="wrong-action" onClick={() => markAnswer('wrong')}>Sai</button>
               <button className="green-action" onClick={() => markAnswer('green')}>Đội Xanh đúng</button>
@@ -229,7 +399,8 @@ function App() {
             </div>
           </section>
         </div>
-      )}
+        )
+      })()}
 
       {hintPrompt && (
         <div className="modal-backdrop" role="presentation">
@@ -252,18 +423,6 @@ function App() {
         </div>
       )}
 
-      {ultimateHintModal && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
-            <button className="close-modal" onClick={() => setUltimateHintModal(false)} aria-label="Đóng">×</button>
-            <p className="modal-label">GỢI Ý TỐI THƯỢNG</p>
-            <h2>{ultimateHintQuestion}</h2>
-            <p className="modal-question">Câu hỏi này tách biệt với thử thách tối thượng.</p>
-            <div className="modal-actions two-actions"><button className="wrong-action" onClick={() => setUltimateHintModal(false)}>Đóng</button><button className="green-action" onClick={() => { setUltimateHintOpened(true); setUltimateHintModal(false) }}>Mở gợi ý</button></div>
-          </section>
-        </div>
-      )}
-
       {winnerModal && (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
@@ -280,15 +439,57 @@ function App() {
           <header className="editor-header"><div><p className="eyebrow">THIẾT LẬP NỘI DUNG</p><h1>Chỉnh sửa câu hỏi</h1></div><button className="done-button" onClick={() => setIsEditor(false)}>Xong</button></header>
           <div className="editor-form">
             <section className="csv-import">
-              <div><span>NHẬP NHANH</span><h2>Import câu hỏi từ CSV</h2><p>Dùng các cột: <b>topic, question, answer, imageUrl, detail</b>. Có thể thêm cột <b>number</b> (01–08) để chọn đúng vị trí câu hỏi.</p></div>
-              <label className="csv-upload">Chọn file CSV<input type="file" accept=".csv,text/csv" onChange={importQuestions} /></label>
+              <div><span>NHẬP NHANH</span><h2>Import câu hỏi từ CSV</h2><p>Dùng các cột: <b>topic, type, question, answer, correctChoice, choiceA, choiceB, choiceC, choiceD, imageUrl, detail</b>. Có thể thêm cột <b>number</b> (01–12) để chọn đúng vị trí câu hỏi.</p></div>
+              <div className="csv-actions">
+                <button className="csv-export" type="button" onClick={exportQuestions}>Xuất CSV</button>
+                <label className="csv-upload">Chọn file CSV<input type="file" accept=".csv,text/csv" onChange={importQuestions} /></label>
+              </div>
               {importMessage && <small>{importMessage}</small>}
             </section>
             <label className="field full-field">Câu hỏi tổng thể<input value={overallQuestion} onChange={(event) => setOverallQuestion(event.target.value)} /></label>
-            <label className="field full-field">Câu hỏi Gợi ý tối thượng<input value={ultimateHintQuestion} onChange={(event) => setUltimateHintQuestion(event.target.value)} /></label>
             <label className="field full-field">Thời gian đếm ngược Thử thách tối thượng (giây)<input type="number" min="1" value={countdownDuration} onChange={(event) => setCountdownDuration(Math.max(1, Number(event.target.value) || 1))} /></label>
             <div className="hint-fields">{hintTexts.map((hint, index) => <label className="field" key={index}>Gợi ý {index + 1}<input value={hint} onChange={(event) => setHintTexts(hintTexts.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} /></label>)}</div>
-            <div className="editor-topics">{topics.map((topic, topicIndex) => <section className="editor-topic" key={topic}><header><span>CHỦ ĐỀ {String(topicIndex + 1).padStart(2, '0')}</span><h2>{topic}</h2><small>Câu {String(topicIndex * 3 + 1).padStart(2, '0')}–{String(topicIndex * 3 + 3).padStart(2, '0')}</small></header><div className="question-fields">{questionData.slice(topicIndex * 3, topicIndex * 3 + 3).map((item, relativeIndex) => { const index = topicIndex * 3 + relativeIndex; return <article className="edit-question" key={index}><b>{String(index + 1).padStart(2, '0')}</b><label className="field">Câu hỏi<input value={item.question} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, question: event.target.value } : value))} /></label><label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, imageUrl: event.target.value } : value))} /></label><label className="field">Đáp án khi mở ô<input value={item.label} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, label: event.target.value } : value))} /></label><label className="field">Mô tả<input value={item.detail} onChange={(event) => setQuestionData(questionData.map((value, itemIndex) => itemIndex === index ? { ...value, detail: event.target.value } : value))} /></label></article>})}</div></section>)}</div>
+            <div className="editor-topics">
+              {topics.map((topic, topicIndex) => (
+                <section className="editor-topic" key={topic}>
+                  <header><span>CHỦ ĐỀ {String(topicIndex + 1).padStart(2, '0')}</span><h2>{topic}</h2><small>Câu {String(topicIndex * 3 + 1).padStart(2, '0')}–{String(topicIndex * 3 + 3).padStart(2, '0')}</small></header>
+                  <div className="question-fields">
+                    {questionData.slice(topicIndex * 3, topicIndex * 3 + 3).map((item, relativeIndex) => {
+                      const index = topicIndex * 3 + relativeIndex
+                      const questionType = item.questionType === QUESTION_TYPE_MULTIPLE ? QUESTION_TYPE_MULTIPLE : QUESTION_TYPE_SINGLE
+                      const choices = normalizeChoices(item.choices, item.label)
+                      return (
+                        <article className="edit-question" key={index}>
+                          <b>{String(index + 1).padStart(2, '0')}</b>
+                          <label className="field">Loại câu hỏi
+                            <select value={questionType} onChange={(event) => updateQuestion(index, { questionType: event.target.value })}>
+                              <option value={QUESTION_TYPE_SINGLE}>Một đáp án</option>
+                              <option value={QUESTION_TYPE_MULTIPLE}>Trắc nghiệm</option>
+                            </select>
+                          </label>
+                          <label className="field">Câu hỏi<input value={item.question} onChange={(event) => updateQuestion(index, { question: event.target.value })} /></label>
+                          <label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => updateQuestion(index, { imageUrl: event.target.value })} /></label>
+                          {questionType === QUESTION_TYPE_MULTIPLE && (
+                            <div className="choice-editor">
+                              {choices.map((choice, choiceIndex) => (
+                                <label className="field" key={choiceLetters[choiceIndex]}>Lựa chọn {choiceLetters[choiceIndex]}<input value={choice} onChange={(event) => updateQuestionChoice(index, choiceIndex, event.target.value)} /></label>
+                              ))}
+                              <label className="field correct-choice-field">Đáp án đúng
+                                <select value={normalizeCorrectChoiceIndex(item.correctChoiceIndex)} onChange={(event) => updateQuestion(index, { correctChoiceIndex: Number(event.target.value) })}>
+                                  {choices.map((choice, choiceIndex) => <option key={choiceLetters[choiceIndex]} value={choiceIndex}>{choiceLetters[choiceIndex]}. {choice || `Lựa chọn ${choiceIndex + 1}`}</option>)}
+                                </select>
+                              </label>
+                            </div>
+                          )}
+                          {questionType === QUESTION_TYPE_SINGLE && <label className="field">Đáp án khi mở ô<input value={item.label} onChange={(event) => updateQuestion(index, { label: event.target.value })} /></label>}
+                          <label className="field">Mô tả<input value={item.detail} onChange={(event) => updateQuestion(index, { detail: event.target.value })} /></label>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
         </section>
       )}
