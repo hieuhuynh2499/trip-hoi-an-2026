@@ -156,6 +156,43 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   cursor: pointer;
 }
 
+.clear-questions-panel {
+  border-color: #ffb4bc;
+  background: linear-gradient(135deg, #9c1729ee, #5f1427e8);
+  box-shadow: 0 5px 0 #4d1020;
+}
+
+.clear-questions-panel span,
+.clear-questions-panel p b {
+  color: #ffe274;
+}
+
+.clear-questions-button {
+  display: grid;
+  min-width: 190px;
+  place-items: center;
+  padding: 12px 16px;
+  border: 2px solid #fff8d7;
+  border-radius: 8px;
+  color: #fff9df;
+  font: 800 .72rem 'Be Vietnam Pro', sans-serif;
+  background: linear-gradient(180deg, #ef3340, #a60f24);
+  box-shadow: 0 4px 0 #6f0f1f;
+  cursor: pointer;
+}
+
+.editor-confirm-backdrop {
+  z-index: 50;
+}
+
+.clear-confirm-actions {
+  grid-template-columns: 1fr 1.5fr;
+}
+
+.clear-confirm-delete {
+  box-shadow: 0 4px 0 #4f0c19;
+}
+
 .choice-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

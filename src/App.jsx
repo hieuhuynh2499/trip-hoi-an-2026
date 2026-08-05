@@ -99,6 +99,35 @@ const defaultQuestions = [
 
 const defaultQuestionIndexes = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14]
 
+const createDefaultQuestionData = () => defaultQuestionIndexes.map((sourceIndex, index) => {
+  const [question, label, imageUrl] = defaultQuestions[sourceIndex]
+  return createQuestion({
+    question,
+    label,
+    imageUrl,
+    detail: 'Câu hỏi',
+    icon: genericQuestionIcons[index],
+    ...(index === 0
+      ? {
+        questionType: QUESTION_TYPE_MULTIPLE,
+        choices: ['3', '4', '5', '6'],
+        correctChoiceIndex: 2,
+      }
+      : {}),
+  })
+})
+
+const createEmptyQuestion = (index, questionType = QUESTION_TYPE_SINGLE) => createQuestion({
+  question: '',
+  label: '',
+  imageUrl: '',
+  detail: '',
+  icon: genericQuestionIcons[index],
+  questionType: questionType === QUESTION_TYPE_MULTIPLE ? QUESTION_TYPE_MULTIPLE : QUESTION_TYPE_SINGLE,
+  choices: Array(MULTIPLE_CHOICE_COUNT).fill(''),
+  correctChoiceIndex: 0,
+})
+
 const defaultSideQuestions = [
   { question: 'Hóa học dạy ta điều gì về tình yêu?', answer: 'Không phải chất nào trộn vào cũng hợp.' },
   { question: 'Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', answer: 'Con người.' },
@@ -149,26 +178,11 @@ const parseCsv = (text) => {
 }
 
 function App() {
-  const [questionData, setQuestionData] = useState(defaultQuestionIndexes.map((sourceIndex, index) => {
-    const [question, label, imageUrl] = defaultQuestions[sourceIndex]
-    return createQuestion({
-      question,
-      label,
-      imageUrl,
-      detail: 'Câu hỏi',
-      icon: genericQuestionIcons[index],
-      ...(index === 0
-        ? {
-          questionType: QUESTION_TYPE_MULTIPLE,
-          choices: ['3', '4', '5', '6'],
-          correctChoiceIndex: 2,
-        }
-        : {}),
-    })
-  }))
+  const [questionData, setQuestionData] = useState(createDefaultQuestionData)
   const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
   const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới'])
   const [isEditor, setIsEditor] = useState(false)
+  const [clearQuestionsConfirm, setClearQuestionsConfirm] = useState(false)
   const [results, setResults] = useState({})
   const [selected, setSelected] = useState(null)
   const [openedHints, setOpenedHints] = useState([])
@@ -264,6 +278,21 @@ function App() {
       const choices = normalizeChoices(item.choices, item.label).map((value, index) => (index === choiceIndex ? choice : value))
       return createQuestion({ ...item, choices })
     }))
+  }
+
+  const clearMainQuestions = () => {
+    setQuestionData((current) => current.map((item, index) => createEmptyQuestion(index, item.questionType)))
+    setResults({})
+    setSelected(null)
+    setSelectedChoiceIndex(null)
+    setWinner(null)
+    setWinnerModal(false)
+    setCelebratingWinner(null)
+    setCountdown(null)
+    setCountdownPaused(false)
+    setPromptedMilestones({})
+    setClearQuestionsConfirm(false)
+    setImportMessage('Đã xóa nội dung 12 câu hỏi chính. Có thể phục hồi bằng cách import CSV.')
   }
 
   const exportQuestions = () => {
@@ -562,6 +591,12 @@ function App() {
               </div>
               {importMessage && <small>{importMessage}</small>}
             </section>
+            <section className="csv-import clear-questions-panel">
+              <div><span>XÓA NHANH</span><h2>Xóa toàn bộ câu hỏi chính</h2><p>Xóa nội dung 12 câu hỏi chính: câu hỏi, đáp án, bốn lựa chọn trắc nghiệm, URL hình ảnh và mô tả tùy biến. Câu hỏi phụ và gợi ý được giữ nguyên.</p></div>
+              <div className="csv-actions">
+                <button className="clear-questions-button" type="button" onClick={() => setClearQuestionsConfirm(true)}>Xóa toàn bộ câu hỏi</button>
+              </div>
+            </section>
             <section className="csv-import">
               <div><span>CÂU HỎI PHỤ</span><h2>Import câu hỏi phụ từ CSV</h2><p>Dùng các cột: <b>question, answer</b>. Có thể dùng tên cột tiếng Việt <b>cauhoi, dapan</b>. Danh sách này chỉ dùng cho luồng mở gợi ý.</p></div>
               <div className="csv-actions">
@@ -615,6 +650,21 @@ function App() {
             </div>
           </div>
         </section>
+      )}
+
+      {clearQuestionsConfirm && (
+        <div className="modal-backdrop editor-confirm-backdrop" role="presentation">
+          <section className="answer-modal clear-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="clear-questions-title">
+            <button className="close-modal" onClick={() => setClearQuestionsConfirm(false)} aria-label="Đóng">×</button>
+            <p className="modal-label">XÁC NHẬN XÓA</p>
+            <h2 id="clear-questions-title">Xóa toàn bộ câu hỏi chính?</h2>
+            <p className="modal-question">Hành động này sẽ xóa nội dung 12 câu hỏi chính: câu hỏi, đáp án, bốn lựa chọn trắc nghiệm, ảnh và mô tả tùy biến. Câu hỏi phụ và gợi ý được giữ nguyên. Có thể phục hồi bằng cách import CSV sau đó.</p>
+            <div className="modal-actions clear-confirm-actions">
+              <button className="countdown-button" type="button" onClick={() => setClearQuestionsConfirm(false)}>Hủy</button>
+              <button className="wrong-action clear-confirm-delete" type="button" onClick={clearMainQuestions}>Xóa toàn bộ câu hỏi</button>
+            </div>
+          </section>
+        </div>
       )}
 
       <footer>Company Trip 2026 <span>·</span> Cùng khám phá, cùng kết nối</footer>
