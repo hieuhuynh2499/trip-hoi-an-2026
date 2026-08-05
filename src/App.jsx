@@ -99,6 +99,27 @@ const defaultQuestions = [
 
 const defaultQuestionIndexes = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14]
 
+const defaultSideQuestions = [
+  { question: 'Hóa học dạy ta điều gì về tình yêu?', answer: 'Không phải chất nào trộn vào cũng hợp.' },
+  { question: 'Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', answer: 'Con người.' },
+  { question: 'Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', answer: 'Khi buồn ngủ.' },
+  { question: 'Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', answer: 'Hà Lan.' },
+  { question: 'Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', answer: '187 tuổi.' },
+  { question: 'Trưởng phòng 63 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'K Cô.' },
+  { question: 'Giao gì khiến chúng ta lo lắng?', answer: 'Giao trứng cho ác.' },
+  { question: 'Lá gì luôn ngửi rất say?', answer: 'Lá mơ.' },
+  { question: 'Điểm gì ăn được?', answer: 'Điểm tâm.' },
+  { question: 'Thứ gì càng gần deadline càng chạy nhanh?', answer: 'Người chạy deadline.' },
+  { question: 'Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', answer: 'Không còn cục nào.' },
+  { question: 'Làm gì mà không phát ra tiếng?', answer: 'Làm thinh.' },
+]
+
+const getNextSideQuestionIndex = (usedIndexes = []) => {
+  const used = new Set(usedIndexes)
+  const nextIndex = defaultSideQuestions.findIndex((_, index) => !used.has(index))
+  return nextIndex >= 0 ? nextIndex : 0
+}
+
 const parseCsv = (text) => {
   const rows = []
   let row = []
@@ -148,6 +169,8 @@ function App() {
   const [openedHints, setOpenedHints] = useState([])
   const [hintOwners, setHintOwners] = useState({})
   const [hintPrompt, setHintPrompt] = useState(null)
+  const [usedSideQuestionIndexes, setUsedSideQuestionIndexes] = useState([])
+  const [revealedSideAnswer, setRevealedSideAnswer] = useState(false)
   const [promptedMilestones, setPromptedMilestones] = useState({})
   const [viewHint, setViewHint] = useState(null)
   const [winner, setWinner] = useState(null)
@@ -173,6 +196,29 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [countdown, countdownPaused])
 
+  const startHintPrompt = (team) => {
+    setRevealedSideAnswer(false)
+    setHintPrompt({
+      team,
+      sideQuestionIndex: getNextSideQuestionIndex(usedSideQuestionIndexes),
+      sideQuestionCleared: false,
+    })
+  }
+
+  const closeHintPrompt = () => {
+    setHintPrompt(null)
+    setRevealedSideAnswer(false)
+  }
+
+  const finishSideQuestion = (isCorrect) => {
+    if (!hintPrompt) return
+    setUsedSideQuestionIndexes((current) => (
+      current.includes(hintPrompt.sideQuestionIndex) ? current : [...current, hintPrompt.sideQuestionIndex]
+    ))
+    setRevealedSideAnswer(false)
+    setHintPrompt(isCorrect ? { ...hintPrompt, sideQuestionCleared: true } : null)
+  }
+
   const markAnswer = (result) => {
     setResults({ ...results, [selected]: result })
     setSelected(null)
@@ -194,7 +240,7 @@ function App() {
       })
       if (hintMilestone !== null && openedHints.length < 3) {
         setPromptedMilestones({ ...promptedMilestones, [hintMilestone]: true })
-        setHintPrompt({ team: result })
+        startHintPrompt(result)
       }
     }
   }
@@ -319,7 +365,7 @@ function App() {
       <header className="game-header">
         <div className="brand-line">
           <div className="matsuri-key-visual"><div className="matsuri-logos"><img className="ceyc-combined-logo" src={`${import.meta.env.BASE_URL}ceyc-matsuri-full.png`} alt="Logo CeYc Matsuri" /></div></div>
-          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => setHintPrompt({ team: null })} disabled={!hasAvailableHints}>Tự mở gợi ý</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
+          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => startHintPrompt(null)} disabled={!hasAvailableHints}>Tự mở gợi ý</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
           <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
@@ -402,15 +448,38 @@ function App() {
         )
       })()}
 
-      {hintPrompt && (
+      {hintPrompt && (() => {
+        const sideQuestionIndex = Number.isInteger(hintPrompt.sideQuestionIndex) ? hintPrompt.sideQuestionIndex : 0
+        const sideQuestion = defaultSideQuestions[sideQuestionIndex]
+        if (!hintPrompt.sideQuestionCleared) {
+          return (
+            <div className="modal-backdrop" role="presentation">
+              <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
+                <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
+                <p className="modal-label">CÂU HỎI PHỤ {String(sideQuestionIndex + 1).padStart(2, '0')}</p>
+                <h2>{sideQuestion.question}</h2>
+                {revealedSideAnswer && <p className="side-answer"><span>Đáp án</span><strong>{sideQuestion.answer}</strong></p>}
+                <p className="modal-question">{hintPrompt.team ? `Đội ${hintPrompt.team === 'green' ? 'Xanh' : 'Đỏ'} đang tranh quyền mở gợi ý.` : 'Câu hỏi phụ để mở gợi ý thủ công.'}</p>
+                <div className="modal-actions side-question-actions">
+                  <button className="wrong-action" onClick={() => finishSideQuestion(false)}>Sai</button>
+                  <button className="countdown-button" onClick={() => setRevealedSideAnswer(!revealedSideAnswer)}>{revealedSideAnswer ? 'Ẩn đáp án' : 'Hiện đáp án'}</button>
+                  <button className="green-action" onClick={() => finishSideQuestion(true)}>Đúng</button>
+                </div>
+              </section>
+            </div>
+          )
+        }
+        return (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
+            <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
             <p className="modal-label">CHỌN MỘT GỢI Ý</p>
             <h2>Mở ô nào?</h2>
-            <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); setHintPrompt(null) }}>?</button>)}</div>
+            <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); closeHintPrompt() }}>?</button>)}</div>
           </section>
         </div>
-      )}
+        )
+      })()}
 
       {viewHint !== null && (
         <div className="modal-backdrop" role="presentation">
