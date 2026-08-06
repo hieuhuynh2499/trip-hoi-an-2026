@@ -79,18 +79,18 @@ const csvCell = (value) => {
 }
 
 const defaultQuestions = [
-  ['Đội nào có nhiều bàn thắng hơn sẽ giành chiến thắng?', 'Đội có số bàn thắng cao hơn', ''],
-  ['Một trận bóng đá thông thường có bao nhiêu hiệp?', '2 hiệp', ''],
-  ['Môn thể thao nào dùng vợt và cầu lông?', 'Cầu lông', ''],
-  ['Hội An thuộc tỉnh nào?', 'Quảng Nam', ''],
-  ['Phố cổ Hội An nổi tiếng với loại đèn nào?', 'Đèn lồng', ''],
-  ['Hội An từng là một thương cảng phát triển vào thế kỷ nào?', 'Thế kỷ XVI–XVII', ''],
-  ['Hoạt động nào thường diễn ra trong một lễ hội?', 'Biểu diễn và trò chơi', ''],
-  ['Một chuyến đi chơi cùng đồng đội cần điều gì nhất?', 'Tinh thần hợp tác', ''],
-  ['Đèn lồng Hội An thường được thắp vào buổi nào?', 'Buổi tối', ''],
-  ['Nhạc cụ nào có sáu dây phổ biến?', 'Đàn guitar', ''],
-  ['Âm nhạc thường giúp tạo ra điều gì trong sự kiện?', 'Không khí sôi động', ''],
-  ['Nhạc cụ nào được gõ bằng dùi?', 'Trống', ''],
+  ['Hóa học dạy ta điều gì về tình yêu?', 'Không phải chất nào trộn vào cũng hợp.', ''],
+  ['Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', 'Con người.', ''],
+  ['Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', 'Khi buồn ngủ.', ''],
+  ['Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', 'Hà Lan.', ''],
+  ['Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', '187 tuổi.', ''],
+  ['Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', 'K Cô.', ''],
+  ['Giao gì khiến chúng ta lo lắng?', 'Giao trứng cho ác.', ''],
+  ['Lá gì luôn ngửi rất say?', 'Lá mơ.', ''],
+  ['Điểm gì ăn được?', 'Điểm tâm.', ''],
+  ['Thứ gì càng gần deadline càng chạy nhanh?', 'Người chạy deadline.', ''],
+  ['Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', 'Không còn cục nào.', ''],
+  ['Làm gì mà không phát ra tiếng?', 'Làm thinh.', ''],
 ]
 
 const createDefaultQuestionData = () => defaultQuestions.map(([question, label, imageUrl], index) => {
@@ -120,7 +120,7 @@ const defaultSideQuestions = [
   { question: 'Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', answer: 'Khi buồn ngủ.' },
   { question: 'Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', answer: 'Hà Lan.' },
   { question: 'Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', answer: '187 tuổi.' },
-  { question: 'Trưởng phòng 63 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'K Cô.' },
+  { question: 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'K Cô.' },
   { question: 'Giao gì khiến chúng ta lo lắng?', answer: 'Giao trứng cho ác.' },
   { question: 'Lá gì luôn ngửi rất say?', answer: 'Lá mơ.' },
   { question: 'Điểm gì ăn được?', answer: 'Điểm tâm.' },
