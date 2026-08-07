@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { getNextUnpromptedHintMilestone } from './hintMilestones'
+import { questionImageAssets } from './questionImageAssets'
 
 const topics = ['Thể thao', 'Lịch sử', 'Giải trí', 'Âm nhạc']
 const genericQuestionIcons = ['✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆', '✦', '◆']
 const QUESTION_TYPE_SINGLE = 'single'
 const QUESTION_TYPE_MULTIPLE = 'multiple'
 const MULTIPLE_CHOICE_COUNT = 4
+const STANDARD_HINT_COUNT = 3
+const SPECIAL_HINT_INDEX = 3
 const choiceLetters = ['A', 'B', 'C', 'D']
 const questionTypeLabels = {
   [QUESTION_TYPE_SINGLE]: 'Một đáp án',
@@ -14,10 +17,11 @@ const questionTypeLabels = {
 }
 
 const cleanText = (value) => String(value ?? '').trim()
+const isExternalAssetUrl = (value) => /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(cleanText(value))
 const getPublicAssetUrl = (value) => {
   const source = cleanText(value)
   if (!source) return ''
-  if (/^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(source)) return source
+  if (isExternalAssetUrl(source)) return source
 
   const basePath = import.meta.env.BASE_URL || '/'
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`
@@ -26,6 +30,47 @@ const getPublicAssetUrl = (value) => {
   const trimmedSource = source.replace(/^\/+/, '')
   if (normalizedBasePath !== '/' && trimmedSource.startsWith(normalizedBasePath.slice(1))) return `/${trimmedSource}`
   return `${normalizedBasePath}${trimmedSource}`
+}
+const normalizePublicAssetPath = (value) => {
+  const source = cleanText(value)
+  if (!source || isExternalAssetUrl(source)) return ''
+
+  const basePath = import.meta.env.BASE_URL || '/'
+  const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`
+  const trimmedSource = source.replace(/^\/+/, '')
+  const trimmedBasePath = normalizedBasePath.replace(/^\/+|\/+$/g, '')
+  if (trimmedBasePath && trimmedSource.startsWith(`${trimmedBasePath}/`)) {
+    return `/${trimmedSource.slice(trimmedBasePath.length + 1)}`
+  }
+  return `/${trimmedSource}`
+}
+const getQuestionImageAssetValue = (asset) => cleanText(asset?.value || asset?.imagePath)
+const getQuestionImageAsset = (value) => {
+  const normalizedPath = normalizePublicAssetPath(value)
+  if (!normalizedPath) return null
+  return questionImageAssets.find((asset) => (
+    [asset.value, asset.imagePath].some((assetValue) => normalizePublicAssetPath(assetValue) === normalizedPath)
+  )) || null
+}
+const getQuestionImageAssetById = (id) => questionImageAssets.find((asset) => asset.id === id) || null
+const getQuestionImagePatch = (value) => {
+  const imageUrl = cleanText(value)
+  const imageAsset = getQuestionImageAsset(imageUrl)
+  if (imageAsset) {
+    return {
+      imagePath: imageAsset.imagePath,
+      imageUrl: imageUrl || getQuestionImageAssetValue(imageAsset),
+    }
+  }
+
+  return {
+    imagePath: normalizePublicAssetPath(imageUrl),
+    imageUrl,
+  }
+}
+const getQuestionImageSrc = (item) => {
+  const imageAsset = getQuestionImageAsset(item?.imageUrl || item?.imagePath)
+  return getPublicAssetUrl(imageAsset?.imagePath || item?.imagePath || item?.imageUrl)
 }
 const foldVietnameseText = (value) => cleanText(value)
   .toLowerCase()
@@ -69,15 +114,18 @@ const getQuestionAnswer = (item) => {
   return choices[normalizeCorrectChoiceIndex(item.correctChoiceIndex)] || cleanText(item.label)
 }
 
-const createQuestion = ({ question, label, imageUrl, detail, icon, questionType = QUESTION_TYPE_SINGLE, choices, correctChoiceIndex = 0 }) => {
+const createQuestion = ({ question, label, imagePath, imageUrl, detail, icon, questionType = QUESTION_TYPE_SINGLE, choices, correctChoiceIndex = 0 }) => {
   const normalizedQuestionType = questionType === QUESTION_TYPE_MULTIPLE ? QUESTION_TYPE_MULTIPLE : QUESTION_TYPE_SINGLE
   const normalizedChoices = normalizeChoices(choices, label)
   const normalizedCorrectChoiceIndex = normalizeCorrectChoiceIndex(correctChoiceIndex)
   const answer = normalizedQuestionType === QUESTION_TYPE_MULTIPLE ? normalizedChoices[normalizedCorrectChoiceIndex] || cleanText(label) : cleanText(label)
+  const normalizedImageUrl = cleanText(imageUrl || imagePath)
+  const normalizedImagePath = cleanText(imagePath) || normalizePublicAssetPath(normalizedImageUrl)
   return {
     question,
     label: answer,
-    imageUrl,
+    imagePath: normalizedImagePath,
+    imageUrl: normalizedImageUrl,
     detail,
     icon,
     questionType: normalizedQuestionType,
@@ -92,24 +140,28 @@ const csvCell = (value) => {
 }
 
 const defaultQuestions = [
-  ['Hóa học dạy ta điều gì về tình yêu?', 'Không phải chất nào trộn vào cũng hợp.', ''],
-  ['Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', 'Con người.', ''],
-  ['Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', 'Khi buồn ngủ.', ''],
-  ['Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', 'Hà Lan.', ''],
-  ['Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', '187 tuổi.', ''],
-  ['Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', 'K Cô.', ''],
-  ['Giao gì khiến chúng ta lo lắng?', 'Giao trứng cho ác.', ''],
-  ['Lá gì luôn ngửi rất say?', 'Lá mơ.', ''],
-  ['Điểm gì ăn được?', 'Điểm tâm.', ''],
-  ['Thứ gì càng gần deadline càng chạy nhanh?', 'Người chạy deadline.', ''],
-  ['Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', 'Không còn cục nào.', ''],
-  ['Làm gì mà không phát ra tiếng?', 'Làm thinh.', ''],
+  ['Hóa học dạy ta điều gì về tình yêu?', 'Không phải chất nào trộn vào cũng hợp.', 'hoa-hoc-tinh-yeu'],
+  ['Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', 'Con người.', 'cau-1'],
+  ['Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', 'Khi buồn ngủ.', 'cau-2'],
+  ['Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', 'Hà Lan.', 'cau-3'],
+  ['Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', '187 tuổi.', 'cau-4'],
+  ['Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', 'Không có ai cả.', 'cau-5'],
+  ['Giao gì khiến chúng ta lo lắng?', 'Giao trứng cho ác.', 'cau-6'],
+  ['Lá gì luôn ngửi rất say?', 'Lá mơ.', 'cau-7'],
+  ['Điểm gì ăn được?', 'Điểm tâm.', 'cau-8'],
+  ['Thứ gì càng gần deadline càng chạy nhanh?', 'Người chạy deadline.', 'cau-11'],
+  ['Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', 'Không còn cục nào.', 'cau-9'],
+  ['Làm gì mà không phát ra tiếng?', 'Làm thinh.', 'cau-10'],
 ]
 
-const createDefaultQuestionData = () => defaultQuestions.map(([question, label, imageUrl], index) => {
+const createDefaultQuestionData = () => defaultQuestions.map(([question, label, imageAssetId], index) => {
+  const imageAsset = getQuestionImageAssetById(imageAssetId)
+  const imagePath = imageAsset?.imagePath || ''
+  const imageUrl = getQuestionImageAssetValue(imageAsset)
   return createQuestion({
     question,
     label,
+    imagePath,
     imageUrl,
     detail: topics[Math.floor(index / 3)] || 'Câu hỏi',
     icon: genericQuestionIcons[index],
@@ -119,6 +171,7 @@ const createDefaultQuestionData = () => defaultQuestions.map(([question, label, 
 const createEmptyQuestion = (index, questionType = QUESTION_TYPE_SINGLE) => createQuestion({
   question: '',
   label: '',
+  imagePath: '',
   imageUrl: '',
   detail: '',
   icon: genericQuestionIcons[index],
@@ -133,7 +186,7 @@ const defaultSideQuestions = [
   { question: 'Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', answer: 'Khi buồn ngủ.' },
   { question: 'Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', answer: 'Hà Lan.' },
   { question: 'Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', answer: '187 tuổi.' },
-  { question: 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'K Cô.' },
+  { question: 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'Không có ai cả.' },
   { question: 'Giao gì khiến chúng ta lo lắng?', answer: 'Giao trứng cho ác.' },
   { question: 'Lá gì luôn ngửi rất say?', answer: 'Lá mơ.' },
   { question: 'Điểm gì ăn được?', answer: 'Điểm tâm.' },
@@ -179,7 +232,7 @@ const parseCsv = (text) => {
 function App() {
   const [questionData, setQuestionData] = useState(createDefaultQuestionData)
   const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
-  const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới'])
+  const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới', 'Gợi ý đặc biệt'])
   const [isEditor, setIsEditor] = useState(false)
   const [clearQuestionsConfirm, setClearQuestionsConfirm] = useState(false)
   const [results, setResults] = useState({})
@@ -203,13 +256,17 @@ function App() {
   const [importMessage, setImportMessage] = useState('')
   const [sideImportMessage, setSideImportMessage] = useState('')
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(null)
+  const [expandedImagePickerIndex, setExpandedImagePickerIndex] = useState(null)
   const greenScore = Object.values(results).filter((result) => result === 'green').length
   const redScore = Object.values(results).filter((result) => result === 'red').length
   const revealedCount = Object.values(results).filter((result) => result === 'green' || result === 'red').length
   const greenHints = Object.values(hintOwners).filter((team) => team === 'green').length
   const redHints = Object.values(hintOwners).filter((team) => team === 'red').length
   const priorityTeam = greenHints === redHints ? null : greenHints > redHints ? 'green' : 'red'
-  const hasAvailableHints = openedHints.length < 3
+  const hasAvailableStandardHints = Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => index).some((index) => !openedHints.includes(index))
+  const isSpecialHintOpen = openedHints.includes(SPECIAL_HINT_INDEX)
+  const visibleHintIndexes = Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => index)
+  if (isSpecialHintOpen) visibleHintIndexes.push(SPECIAL_HINT_INDEX)
 
   useEffect(() => {
     if (countdown === null || countdown <= 0 || countdownPaused) return undefined
@@ -229,6 +286,10 @@ function App() {
   const closeHintPrompt = () => {
     setHintPrompt(null)
     setRevealedSideAnswer(false)
+  }
+
+  const openSpecialHint = () => {
+    setOpenedHints((current) => (current.includes(SPECIAL_HINT_INDEX) ? current : [...current, SPECIAL_HINT_INDEX]))
   }
 
   const finishSideQuestion = (winningTeam) => {
@@ -271,7 +332,7 @@ function App() {
         hintThreshold,
         promptedMilestones,
       })
-      if (hintMilestone !== null && openedHints.length < 3) {
+      if (hintMilestone !== null && hasAvailableStandardHints) {
         setPromptedMilestones({ ...promptedMilestones, [hintMilestone]: true })
         startHintPrompt(result)
       }
@@ -282,6 +343,19 @@ function App() {
     setQuestionData((current) => current.map((item, itemIndex) => (
       itemIndex === index ? createQuestion({ ...item, ...patch }) : item
     )))
+  }
+
+  const toggleImagePicker = (index) => {
+    setExpandedImagePickerIndex((current) => (current === index ? null : index))
+  }
+
+  const chooseQuestionImage = (index, imagePath) => {
+    const imageAsset = getQuestionImageAsset(imagePath)
+    updateQuestion(index, imagePath ? {
+      imagePath,
+      imageUrl: getQuestionImageAssetValue(imageAsset) || imagePath,
+    } : getQuestionImagePatch(''))
+    setExpandedImagePickerIndex(null)
   }
 
   const updateQuestionChoice = (questionIndex, choiceIndex, choice) => {
@@ -389,9 +463,9 @@ function App() {
         next[declaredIndex] = {
           ...createQuestion({
             ...current,
-          question: row[questionColumn],
+            question: row[questionColumn],
             label: answer,
-          imageUrl: row[imageColumn] || '',
+            ...getQuestionImagePatch(row[imageColumn] || ''),
             detail: row[detailColumn] || (topicIndex >= 0 ? topics[topicIndex] : current.detail),
             questionType,
             choices,
@@ -452,7 +526,7 @@ function App() {
       <header className="game-header">
         <div className="brand-line">
           <div className="matsuri-key-visual"><div className="matsuri-logos"><img className="ceyc-combined-logo" src={`${import.meta.env.BASE_URL}ceyc-matsuri-full.png`} alt="Logo CeYc Matsuri" /></div></div>
-          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={() => startHintPrompt(null)} disabled={!hasAvailableHints}>Tự mở gợi ý</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
+          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={openSpecialHint} disabled={isSpecialHintOpen}>Mở gợi ý đặc biệt</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
           <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
@@ -461,8 +535,8 @@ function App() {
         </div>
       </header>
 
-      <section className="hint-grid" aria-label="Gợi ý">
-        {[0, 1, 2].map((index) => <div key={index} className={`hint-card ${openedHints.includes(index) ? 'is-unlocked' : 'is-locked'}`} aria-label={openedHints.includes(index) ? `Gợi ý ${index + 1}: ${hintTexts[index]}` : `Gợi ý ${index + 1} đang khóa`}><span>{openedHints.includes(index) ? hintTexts[index] : '?'}</span></div>)}
+      <section className={`hint-grid ${isSpecialHintOpen ? 'has-special-hint' : ''}`} aria-label="Gợi ý">
+        {visibleHintIndexes.map((index) => <div key={index} className={`hint-card ${index === SPECIAL_HINT_INDEX ? 'is-special-hint' : ''} ${openedHints.includes(index) ? 'is-unlocked' : 'is-locked'}`} aria-label={openedHints.includes(index) ? `Gợi ý ${index + 1}: ${hintTexts[index]}` : `Gợi ý ${index + 1} đang khóa`}><span>{openedHints.includes(index) ? hintTexts[index] : '?'}</span></div>)}
       </section>
 
       <section className="question-grid" aria-label="Bảng câu hỏi">
@@ -495,7 +569,7 @@ function App() {
         const correctChoiceIndex = normalizeCorrectChoiceIndex(selectedQuestion.correctChoiceIndex)
         const hasSelectedChoice = selectedChoiceIndex !== null
         const selectedChoiceIsCorrect = selectedChoiceIndex === correctChoiceIndex
-        const selectedQuestionImageSrc = getPublicAssetUrl(selectedQuestion.imageUrl)
+        const selectedQuestionImageSrc = getQuestionImageSrc(selectedQuestion)
         return (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
@@ -558,7 +632,7 @@ function App() {
                 <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
                 <p className="modal-label">CÂU HỎI PHỤ {String(sideQuestionIndex + 1).padStart(2, '0')}</p>
                 <h2>{sideQuestion.question}</h2>
-                <p className="modal-question">{hintPrompt.team ? `${promptedTeamName} đã kích hoạt mốc gợi ý. Trả lời câu hỏi phụ để tranh quyền mở gợi ý.` : 'Câu hỏi phụ để mở gợi ý thủ công.'}</p>
+                <p className="modal-question">{promptedTeamName} đã kích hoạt mốc gợi ý. Trả lời câu hỏi phụ để tranh quyền mở gợi ý.</p>
                 <div className={`side-question-state ${revealedSideAnswer ? 'is-revealed' : 'is-hidden'}`} aria-live="polite">
                   <span>{revealedSideAnswer ? 'ĐÁP ÁN ĐÃ HIỆN' : 'ĐÁP ÁN ĐANG ẨN'}</span>
                   <strong>{revealedSideAnswer ? 'Chọn đội thắng câu hỏi phụ để tiếp tục mở gợi ý.' : 'Bấm Hiện đáp án khi cần kiểm tra câu trả lời.'}</strong>
@@ -589,7 +663,7 @@ function App() {
             <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
             <p className="modal-label">CHỌN MỘT GỢI Ý</p>
             <h2>Mở ô nào?</h2>
-            <div className="hint-picker">{[0, 1, 2].map((index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); closeHintPrompt() }}>?</button>)}</div>
+            <div className="hint-picker">{Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); closeHintPrompt() }}>?</button>)}</div>
           </section>
         </div>
         )
@@ -619,7 +693,7 @@ function App() {
 
       {isEditor && (
         <section className="editor-page" aria-label="Thiết lập câu hỏi">
-          <header className="editor-header"><div><p className="eyebrow">THIẾT LẬP NỘI DUNG</p><h1>Chỉnh sửa câu hỏi</h1></div><button className="done-button" onClick={() => setIsEditor(false)}>Xong</button></header>
+          <header className="editor-header"><div><p className="eyebrow">THIẾT LẬP NỘI DUNG</p><h1>Chỉnh sửa câu hỏi</h1></div><button className="done-button" onClick={() => { setExpandedImagePickerIndex(null); setIsEditor(false) }}>Xong</button></header>
           <div className="editor-form">
             <section className="csv-import">
               <div><span>NHẬP NHANH</span><h2>Import câu hỏi từ CSV</h2><p>Dùng các cột: <b>topic, type, question, answer, correctChoice, choiceA, choiceB, choiceC, choiceD, imageUrl, detail</b>. Cột <b>imageUrl</b> chấp nhận <b>/images/ten-anh.jpg</b> hoặc URL <b>https</b>. Có thể thêm cột <b>number</b> (01–12) để chọn đúng vị trí câu hỏi.</p></div>
@@ -654,6 +728,10 @@ function App() {
                       const index = topicIndex * 3 + relativeIndex
                       const questionType = item.questionType === QUESTION_TYPE_MULTIPLE ? QUESTION_TYPE_MULTIPLE : QUESTION_TYPE_SINGLE
                       const choices = normalizeChoices(item.choices, item.label)
+                      const selectedImageAsset = getQuestionImageAsset(item.imageUrl || item.imagePath)
+                      const imagePreviewSrc = getQuestionImageSrc(item)
+                      const imagePreviewLabel = selectedImageAsset?.name || item.imageUrl || 'No image'
+                      const isImagePickerExpanded = expandedImagePickerIndex === index
                       return (
                         <article className="edit-question" key={index}>
                           <b>{String(index + 1).padStart(2, '0')}</b>
@@ -664,7 +742,63 @@ function App() {
                             </select>
                           </label>
                           <label className="field">Câu hỏi<input value={item.question} onChange={(event) => updateQuestion(index, { question: event.target.value })} /></label>
-                          <label className="field image-path-field">Ảnh minh họa<input placeholder="/images/ten-anh.jpg hoặc https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => updateQuestion(index, { imageUrl: event.target.value })} /><small>Chép file vào public/images rồi nhập /images/tên-file. URL https vẫn dùng được.</small></label>
+                          <div className="field image-picker-field">
+                            <span>Ảnh minh họa</span>
+                            <div className={`image-picker-preview ${imagePreviewSrc ? '' : 'is-empty'}`}>
+                              {imagePreviewSrc ? (
+                                <img src={imagePreviewSrc} alt="Ảnh minh họa đang chọn" />
+                              ) : (
+                                <span className="image-picker-empty">Không ảnh</span>
+                              )}
+                              <span>
+                                <strong>{imagePreviewLabel}</strong>
+                                <small>{imagePreviewSrc ? 'Ảnh đang chọn' : 'Chưa chọn ảnh minh họa'}</small>
+                              </span>
+                              <button
+                                className="image-picker-toggle"
+                                type="button"
+                                aria-controls={`image-picker-options-${index}`}
+                                aria-expanded={isImagePickerExpanded}
+                                onClick={() => toggleImagePicker(index)}
+                              >
+                                {isImagePickerExpanded ? 'Thu gọn' : imagePreviewSrc ? 'Đổi ảnh' : 'Chọn ảnh'}
+                              </button>
+                            </div>
+                            {isImagePickerExpanded && (
+                              <div className="image-picker-catalog" id={`image-picker-options-${index}`}>
+                                <div className="image-picker-options" aria-label={`Ảnh minh họa câu ${index + 1}`}>
+                                  <button
+                                    className={`image-picker-option ${!item.imageUrl ? 'is-selected' : ''}`}
+                                    type="button"
+                                    aria-label={!item.imageUrl ? 'No image đang chọn' : 'No image'}
+                                    aria-pressed={!item.imageUrl}
+                                    onClick={() => chooseQuestionImage(index, '')}
+                                  >
+                                    <span className="image-picker-empty">Không ảnh</span>
+                                    <strong>No image</strong>
+                                  </button>
+                                  {questionImageAssets.map((asset) => {
+                                    const isSelectedImageAsset = selectedImageAsset?.id === asset.id
+                                    return (
+                                      <button
+                                        className={`image-picker-option ${isSelectedImageAsset ? 'is-selected' : ''}`}
+                                        type="button"
+                                        key={asset.id}
+                                        aria-label={isSelectedImageAsset ? `${asset.name} đang chọn` : asset.name}
+                                        aria-pressed={isSelectedImageAsset}
+                                        onClick={() => chooseQuestionImage(index, asset.imagePath)}
+                                      >
+                                        <img src={getPublicAssetUrl(asset.imagePath)} alt="" />
+                                        <strong>{asset.name}</strong>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                                <input placeholder="/images/ten-anh.jpg hoặc https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => updateQuestion(index, getQuestionImagePatch(event.target.value))} />
+                                <small>Nội bộ: /images/ten-file. URL https vẫn dùng được.</small>
+                              </div>
+                            )}
+                          </div>
                           {questionType === QUESTION_TYPE_MULTIPLE && (
                             <div className="choice-editor">
                               {choices.map((choice, choiceIndex) => (

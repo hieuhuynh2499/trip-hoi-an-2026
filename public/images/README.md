@@ -2,6 +2,8 @@
 
 Chep anh minh hoa cau hoi vao thu muc nay.
 
+Them anh vao danh sach trong `src/questionImageAssets.js` de hien trong picker cua man hinh Thiet lap.
+
 Trong man hinh Thiet lap, nhap duong dan theo mau:
 
 ```text
