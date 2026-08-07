@@ -10,6 +10,7 @@ const QUESTION_TYPE_MULTIPLE = 'multiple'
 const MULTIPLE_CHOICE_COUNT = 4
 const STANDARD_HINT_COUNT = 3
 const SPECIAL_HINT_INDEX = 3
+const DEFAULT_HINT_THRESHOLD = 3
 const GAME_STORAGE_KEY = 'trip-hoi-an-2026-game-state-v1'
 const choiceLetters = ['A', 'B', 'C', 'D']
 const questionTypeLabels = {
@@ -20,6 +21,10 @@ const DEFAULT_OVERALL_QUESTION = 'Center 3 đã bước sang năm thứ 2. Trong
 const ULTIMATE_ANSWER = 'Trâu chậm uống nước đục'
 const DEFAULT_HINT_TEXTS = ['Một câu tục ngữ gồm 5 chữ', 'Câu tục ngữ nói về tốc độ quyết định cơ hội', 'Mở đầu bằng con giáp đứng thứ hai trong 12 con giáp.', 'T_ _ _  C_ậ_  U_ _g  N_ _c  Đ_c']
 const LEGACY_SPECIAL_HINT_TEXTS = ['Gợi ý đặc biệt', 'T_ _ _ c_ _m  u_ _g   n_ _c _ _c', 'T_ _ _  C_ậ_  *U* _ _ *g  N* _ _ c   Đ _ c']
+const UPDATED_FISHING_QUESTION = 'Trên nhấp dưới giật là đang làm gì?'
+const UPDATED_DEPUTY_QUESTION = 'Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó BVH C3 hiện tại là ai?'
+const UPDATED_SLEEPY_LEAF_QUESTION = 'Lá gì luôn ngủ rất say'
+const UPDATED_CANDY_QUESTION = 'Như bạn biết, 5 chia cho 5 thì bằng 1. Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?'
 
 const cleanText = (value) => String(value ?? '').trim()
 const isExternalAssetUrl = (value) => /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(cleanText(value))
@@ -146,16 +151,16 @@ const csvCell = (value) => {
 
 const defaultQuestions = [
   ['Hóa học dạy ta điều gì về tình yêu?', 'Không phải chất nào trộn vào cũng hợp.', 'cau-15'],
-  ['Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', 'Con người.', 'cau-1'],
+  [UPDATED_FISHING_QUESTION, 'Câu cá', 'cau-1'],
   ['Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', 'Khi buồn ngủ.', 'cau-2'],
   ['Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', 'Hà Lan.', 'cau-3'],
   ['Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', '187 tuổi.', 'cau-4'],
-  ['Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó trưởng BVH C3 hiện tại là ai?', 'Không có ai cả.', 'cau-5'],
+  [UPDATED_DEPUTY_QUESTION, 'Không có', 'cau-5'],
   ['Giao gì khiến chúng ta lo lắng?', 'Giao trứng cho ác.', 'cau-6'],
-  ['Lá gì luôn ngửi rất say?', 'Lá mơ.', 'cau-7'],
+  [UPDATED_SLEEPY_LEAF_QUESTION, 'Lá mơ', 'cau-7'],
   ['Điểm gì ăn được?', 'Điểm tâm.', 'cau-8'],
   ['Cái gì đánh cha, đánh má, đánh anh, đánh chị, đánh em?', 'Bàn chải đánh răng.', 'cau-11'],
-  ['Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', 'Không còn cục nào.', 'cau-9'],
+  [UPDATED_CANDY_QUESTION, 'Không còn cục nào', 'cau-9'],
   ['Làm gì mà không phát ra tiếng?', 'Làm thinh.', 'cau-10'],
 ]
 
@@ -187,16 +192,16 @@ const createEmptyQuestion = (index, questionType = QUESTION_TYPE_SINGLE) => crea
 
 const defaultSideQuestions = [
   { question: 'Hóa học dạy ta điều gì về tình yêu?', answer: 'Không phải chất nào trộn vào cũng hợp.' },
-  { question: 'Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', answer: 'Con người.' },
+  { question: UPDATED_FISHING_QUESTION, answer: 'Câu cá' },
   { question: 'Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', answer: 'Khi buồn ngủ.' },
   { question: 'Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', answer: 'Hà Lan.' },
   { question: 'Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', answer: '187 tuổi.' },
-  { question: 'Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'Không có ai cả.' },
+  { question: UPDATED_DEPUTY_QUESTION, answer: 'Không có' },
   { question: 'Giao gì khiến chúng ta lo lắng?', answer: 'Giao trứng cho ác.' },
-  { question: 'Lá gì luôn ngửi rất say?', answer: 'Lá mơ.' },
+  { question: UPDATED_SLEEPY_LEAF_QUESTION, answer: 'Lá mơ' },
   { question: 'Điểm gì ăn được?', answer: 'Điểm tâm.' },
   { question: 'Cái gì đánh cha, đánh má, đánh anh, đánh chị, đánh em?', answer: 'Bàn chải đánh răng.' },
-  { question: 'Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', answer: 'Không còn cục nào.' },
+  { question: UPDATED_CANDY_QUESTION, answer: 'Không còn cục nào' },
   { question: 'Làm gì mà không phát ra tiếng?', answer: 'Làm thinh.' },
 ]
 
@@ -238,8 +243,24 @@ const normalizeSavedQuestionData = (value) => {
       saved.question = fallback.question
       saved.label = fallback.label
     }
-    if (index === 5 && saved.question === 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?') {
+    if (index === 1 && saved.question === 'Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?') {
       saved.question = fallback.question
+      saved.label = fallback.label
+    }
+    if (index === 5 && [
+      'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?',
+      'Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó trưởng BVH C3 hiện tại là ai?',
+    ].includes(saved.question)) {
+      saved.question = fallback.question
+      saved.label = fallback.label
+    }
+    if (index === 7 && saved.question === 'Lá gì luôn ngửi rất say?') {
+      saved.question = fallback.question
+      saved.label = fallback.label
+    }
+    if (index === 10 && saved.question === 'Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?') {
+      saved.question = fallback.question
+      saved.label = fallback.label
     }
     const savedImageValue = Object.hasOwn(saved, 'imageUrl')
       ? saved.imageUrl
@@ -283,8 +304,16 @@ const normalizeSavedSideQuestions = (value) => {
   const normalized = value.map(normalizeSideQuestion).filter((item) => item.question && item.answer)
   const oldQuestionIndex = normalized.findIndex((item) => item.question === 'Thứ gì càng gần deadline càng chạy nhanh?')
   if (oldQuestionIndex >= 0) normalized[oldQuestionIndex] = defaultSideQuestions[9]
+  const zooQuestionIndex = normalized.findIndex((item) => item.question === 'Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?')
+  if (zooQuestionIndex >= 0) normalized[zooQuestionIndex] = defaultSideQuestions[1]
   const oldDeputyQuestionIndex = normalized.findIndex((item) => item.question === 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?')
   if (oldDeputyQuestionIndex >= 0) normalized[oldDeputyQuestionIndex] = defaultSideQuestions[5]
+  const recentDeputyQuestionIndex = normalized.findIndex((item) => item.question === 'Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó trưởng BVH C3 hiện tại là ai?')
+  if (recentDeputyQuestionIndex >= 0) normalized[recentDeputyQuestionIndex] = defaultSideQuestions[5]
+  const sleepyLeafQuestionIndex = normalized.findIndex((item) => item.question === 'Lá gì luôn ngửi rất say?')
+  if (sleepyLeafQuestionIndex >= 0) normalized[sleepyLeafQuestionIndex] = defaultSideQuestions[7]
+  const shortCandyQuestionIndex = normalized.findIndex((item) => item.question === 'Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?')
+  if (shortCandyQuestionIndex >= 0) normalized[shortCandyQuestionIndex] = defaultSideQuestions[10]
   return normalized.length ? normalized : defaultSideQuestions
 }
 
@@ -295,6 +324,10 @@ const normalizeSavedGameState = (value) => {
     ? DEFAULT_HINT_TEXTS.map((fallback, index) => cleanText(value.hintTexts[index]) || fallback)
     : DEFAULT_HINT_TEXTS
   if (LEGACY_SPECIAL_HINT_TEXTS.includes(hintTexts[SPECIAL_HINT_INDEX])) hintTexts[SPECIAL_HINT_INDEX] = DEFAULT_HINT_TEXTS[SPECIAL_HINT_INDEX]
+  const savedHintThreshold = Math.max(1, Number(value.hintThreshold) || DEFAULT_HINT_THRESHOLD)
+  const hintThreshold = value.hintThresholdDefaultMigrated === true
+    ? savedHintThreshold
+    : savedHintThreshold === 2 ? DEFAULT_HINT_THRESHOLD : savedHintThreshold
 
   return {
     questionData,
@@ -313,7 +346,8 @@ const normalizeSavedGameState = (value) => {
     countdownPaused: value.countdownPaused === true,
     countdownDuration: Math.max(1, Number(value.countdownDuration) || 20),
     countdown: Number.isFinite(Number(value.countdown)) ? Math.max(0, Number(value.countdown)) : null,
-    hintThreshold: Math.max(1, Number(value.hintThreshold) || 2),
+    hintThreshold,
+    hintThresholdDefaultMigrated: true,
     winningScoreEnabled: value.winningScoreEnabled === true,
     winningScore: Math.max(1, Number(value.winningScore) || 6),
     selected: null,
@@ -364,7 +398,7 @@ function App() {
   const [countdownPaused, setCountdownPaused] = useState(() => savedGameState?.countdownPaused || false)
   const [countdownDuration, setCountdownDuration] = useState(() => savedGameState?.countdownDuration || 20)
   const [countdown, setCountdown] = useState(() => savedGameState?.countdown ?? null)
-  const [hintThreshold, setHintThreshold] = useState(() => savedGameState?.hintThreshold || 2)
+  const [hintThreshold, setHintThreshold] = useState(() => savedGameState?.hintThreshold || DEFAULT_HINT_THRESHOLD)
   const [winningScoreEnabled, setWinningScoreEnabled] = useState(() => savedGameState?.winningScoreEnabled || false)
   const [winningScore, setWinningScore] = useState(() => savedGameState?.winningScore || 6)
   const [importMessage, setImportMessage] = useState('')
@@ -404,6 +438,7 @@ function App() {
       countdownDuration,
       countdown,
       hintThreshold,
+      hintThresholdDefaultMigrated: true,
       winningScoreEnabled,
       winningScore,
       selectedChoiceIndex,
