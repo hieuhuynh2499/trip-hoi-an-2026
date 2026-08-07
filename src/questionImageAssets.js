@@ -9,14 +9,15 @@ import cau8Image from './assets/cau-8.png'
 import cau9Image from './assets/cau-9.png'
 import cau10Image from './assets/cau-10.png'
 import cau11Image from './assets/cau-11.png'
+import cau15Image from './assets/cau-15.png'
 
 // Public assets stay as root-relative paths; src/assets files must be imported so Vite fingerprints them for GitHub Pages.
 export const questionImageAssets = [
   {
-    id: 'hoa-hoc-tinh-yeu',
-    name: 'hoa-hoc-tinh-yeu.png',
-    value: '/images/hoa-hoc-tinh-yeu.png',
-    imagePath: '/images/hoa-hoc-tinh-yeu.png',
+    id: 'cau-15',
+    name: 'cau-15.png',
+    value: 'src/assets/cau-15.png',
+    imagePath: cau15Image,
   },
   {
     id: 'cau-1',

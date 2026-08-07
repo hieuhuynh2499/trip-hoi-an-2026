@@ -62,8 +62,6 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
 .matsuri-key-visual{position:static;transform:none;width:auto}.matsuri-logos{position:static}.matsuri-wordmark{position:absolute;left:50%;top:-4px;transform:translateX(-50%)}@media(max-width:920px){.matsuri-key-visual{position:static}.matsuri-wordmark{position:relative;left:auto;top:0;transform:none}}
 .brand-line{min-height:122px}.ceyc-combined-logo{display:block;width:min(390px,34vw);height:auto;filter:drop-shadow(0 5px 8px #510813)}@media(max-width:920px){.brand-line{min-height:0}.ceyc-combined-logo{width:min(310px,72vw)}}
 .hint-card.is-unlocked{align-items:center}.hint-card.is-unlocked span{max-width:90%;color:#8f1925;font:700 clamp(.9rem,1.35vw,1.2rem)/1.25 'Be Vietnam Pro',sans-serif;text-align:left}
-.team-score.is-priority{border-color:#ffd84d!important;box-shadow:0 0 0 3px #fff4c466,0 5px 0 #7c4b11,0 12px 24px #06195177}.team-score em{margin-top:7px;padding:4px 8px;border-radius:99px;color:#701126;background:#ffd84d;font:800 .56rem 'Be Vietnam Pro',sans-serif;letter-spacing:.06em;text-transform:uppercase;font-style:normal}
-
 .game-header{padding:102px 28px 20px;overflow:hidden}.game-header::before{left:0;right:0;top:0;height:88px;border-radius:10px 10px 0 0;background:linear-gradient(180deg,#ffe365 0%,#ffc42c 54%,#ec9b16 100%);box-shadow:inset 0 -5px 0 #bb6519,0 5px 0 #a71325}.brand-line{position:absolute;z-index:2;left:28px;right:28px;top:0;min-height:88px;height:88px;margin:0;display:flex;align-items:center;justify-content:space-between}.ceyc-combined-logo{width:280px;max-height:76px;object-fit:contain}.status-controls{background:transparent;box-shadow:none;border:0;padding:0}@media(max-width:920px){.game-header{padding:16px}.game-header::before{display:none}.brand-line{position:static;height:auto;min-height:0;margin-bottom:12px}.ceyc-combined-logo{width:min(260px,72vw)}}
 
 .question-grid:not(.topic-grid) .question-card:not(.is-open):not(.is-wrong),.question-grid:not(.topic-grid) .question-card:nth-child(2):not(.is-open):not(.is-wrong),.question-grid:not(.topic-grid) .question-card:nth-child(3):not(.is-open):not(.is-wrong),.question-grid:not(.topic-grid) .question-card:nth-child(4):not(.is-open):not(.is-wrong){border-color:#d9f3ff;background:linear-gradient(145deg,#178fc8,#0756a7 62%,#042c69)!important;box-shadow:inset 0 2px #ffffff66,0 5px 0 #053477,0 12px 16px #00204e7c}.question-grid:not(.topic-grid) .question-card:nth-child(even):not(.is-open):not(.is-wrong){background:linear-gradient(145deg,#117cb7,#064793 62%,#03255c)!important}
@@ -401,6 +399,40 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   background: linear-gradient(180deg, #ef3340, #a60f24);
   box-shadow: 0 4px 0 #6f0f1f;
   cursor: pointer;
+}
+
+.winning-score-panel {
+  border-color: #a8ebff;
+  background: linear-gradient(135deg, #075e9fee, #07377ae8);
+  box-shadow: 0 5px 0 #063071;
+}
+
+.winning-score-panel.is-enabled {
+  border-color: #fff0a3;
+  background: linear-gradient(135deg, #0b7d68ee, #064b62e8);
+  box-shadow: 0 5px 0 #04324a;
+}
+
+.winning-score-actions {
+  align-items: end;
+}
+
+.winning-score-field {
+  min-width: 128px;
+}
+
+.winning-score-field input {
+  height: 46px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.winning-score-enable {
+  min-width: 190px;
+}
+
+.winning-score-disable {
+  background: linear-gradient(180deg, #ef3340, #a60f24);
 }
 
 .editor-confirm-backdrop {
@@ -1030,5 +1062,93 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
 
   .card-preview {
     font-size: var(--stage-symbol);
+  }
+}
+
+/* Per-question mode UI. */
+.question-type-badge {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 12px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  height: 26px;
+  border: 2px solid #fff8d7;
+  border-radius: 999px;
+  color: #7a1326;
+  background: linear-gradient(145deg, #ffdf63, #efa92b);
+  box-shadow: 0 3px 0 #b56814, 0 7px 12px #0006;
+  font: 800 .62rem/1 'Be Vietnam Pro', sans-serif;
+  letter-spacing: .08em;
+}
+
+.question-card.is-multiple-choice:not(.is-open):not(.is-wrong) {
+  border-color: #fff0a3;
+}
+
+.choice-list.is-selecting .choice-option {
+  border-color: #9fd7ff;
+}
+
+.choice-list.is-selecting .choice-option:hover,
+.choice-list.is-selecting .choice-option.is-selected {
+  border-color: #fff8d7;
+  background: linear-gradient(145deg, #0d83d9, #064ea3);
+}
+
+.choice-instruction {
+  margin-bottom: 0;
+}
+
+.question-mode-field > span {
+  color: #fff1be;
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 5px;
+  border: 2px solid #ffdc65;
+  border-radius: 10px;
+  background: #6d1428;
+}
+
+.mode-switch button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff8df;
+  background: transparent;
+  font: 800 .68rem/1.1 'Be Vietnam Pro', sans-serif;
+  cursor: pointer;
+}
+
+.mode-switch button.is-active {
+  color: #641229;
+  background: linear-gradient(180deg, #ffdf63, #efa92b);
+  box-shadow: 0 3px 0 #b56814;
+}
+
+.choice-editor {
+  padding: 12px;
+  border: 2px solid #ffdc65;
+  border-radius: 10px;
+  background: #7b152bea;
+}
+
+@media(min-width:921px) {
+  .main-question-modal .choice-list {
+    gap: clamp(9px, .8vw, 16px);
+  }
+
+  .main-question-modal .choice-option {
+    min-height: clamp(48px, 5vh, 74px);
+  }
+
+  .main-question-modal .choice-option strong {
+    font-size: clamp(.9rem, calc(.32vw + .58vh), 1.18rem);
   }
 }

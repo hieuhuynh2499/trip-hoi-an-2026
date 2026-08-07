@@ -18,7 +18,8 @@ const questionTypeLabels = {
 }
 const DEFAULT_OVERALL_QUESTION = 'Center 3 đã bước sang năm thứ 2. Trong kỷ nguyên AI, nếu chỉ đứng yên và chờ đợi, chúng ta rất dễ bỏ lỡ những cơ hội mới. Theo bạn, câu tục ngữ nào của người Việt diễn tả đúng nhất điều đó?'
 const ULTIMATE_ANSWER = 'Trâu chậm uống nước đục'
-const DEFAULT_HINT_TEXTS = ['Một câu tục ngữ gồm 5 chữ', 'Câu tục ngữ nói về tốc độ quyết định cơ hội', 'Mở đầu bằng con giáp đứng thứ hai trong 12 con giáp.', 'T_ _ _ c_ _m  u_ _g   n_ _c _ _c']
+const DEFAULT_HINT_TEXTS = ['Một câu tục ngữ gồm 5 chữ', 'Câu tục ngữ nói về tốc độ quyết định cơ hội', 'Mở đầu bằng con giáp đứng thứ hai trong 12 con giáp.', 'T_ _ _  C_ậ_  U_ _g  N_ _c  Đ_c']
+const LEGACY_SPECIAL_HINT_TEXTS = ['Gợi ý đặc biệt', 'T_ _ _ c_ _m  u_ _g   n_ _c _ _c', 'T_ _ _  C_ậ_  *U* _ _ *g  N* _ _ c   Đ _ c']
 
 const cleanText = (value) => String(value ?? '').trim()
 const isExternalAssetUrl = (value) => /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(cleanText(value))
@@ -144,12 +145,12 @@ const csvCell = (value) => {
 }
 
 const defaultQuestions = [
-  ['Hóa học dạy ta điều gì về tình yêu?', 'Không phải chất nào trộn vào cũng hợp.', 'hoa-hoc-tinh-yeu'],
+  ['Hóa học dạy ta điều gì về tình yêu?', 'Không phải chất nào trộn vào cũng hợp.', 'cau-15'],
   ['Sở thú bị cháy, đố bạn con gì chạy ra đầu tiên?', 'Con người.', 'cau-1'],
   ['Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', 'Khi buồn ngủ.', 'cau-2'],
   ['Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', 'Hà Lan.', 'cau-3'],
   ['Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', '187 tuổi.', 'cau-4'],
-  ['Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', 'Không có ai cả.', 'cau-5'],
+  ['Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó trưởng BVH C3 hiện tại là ai?', 'Không có ai cả.', 'cau-5'],
   ['Giao gì khiến chúng ta lo lắng?', 'Giao trứng cho ác.', 'cau-6'],
   ['Lá gì luôn ngửi rất say?', 'Lá mơ.', 'cau-7'],
   ['Điểm gì ăn được?', 'Điểm tâm.', 'cau-8'],
@@ -190,7 +191,7 @@ const defaultSideQuestions = [
   { question: 'Với con người, thời điểm tốt nhất để đi ngủ là khi nào?', answer: 'Khi buồn ngủ.' },
   { question: 'Khi nhắc đến cối xay gió, người ta thường nghĩ đến đất nước nào?', answer: 'Hà Lan.' },
   { question: 'Tổng số tuổi của HEAD + 4 SDM nhà mình là bao nhiêu?', answer: '187 tuổi.' },
-  { question: 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'Không có ai cả.' },
+  { question: 'Trưởng BVH C3 hiện tại là Tùng Quân. Vậy phó trưởng BVH C3 hiện tại là ai?', answer: 'Không có ai cả.' },
   { question: 'Giao gì khiến chúng ta lo lắng?', answer: 'Giao trứng cho ác.' },
   { question: 'Lá gì luôn ngửi rất say?', answer: 'Lá mơ.' },
   { question: 'Điểm gì ăn được?', answer: 'Điểm tâm.' },
@@ -237,10 +238,15 @@ const normalizeSavedQuestionData = (value) => {
       saved.question = fallback.question
       saved.label = fallback.label
     }
+    if (index === 5 && saved.question === 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?') {
+      saved.question = fallback.question
+    }
     const savedImageValue = Object.hasOwn(saved, 'imageUrl')
       ? saved.imageUrl
       : Object.hasOwn(saved, 'imagePath') ? saved.imagePath : fallback.imageUrl
-    const imagePatch = getQuestionImagePatch(savedImageValue)
+    const imagePatch = getQuestionImagePatch(index === 0 && normalizePublicAssetPath(savedImageValue) === '/images/hoa-hoc-tinh-yeu.png'
+      ? 'src/assets/cau-15.png'
+      : savedImageValue)
     return createQuestion({
       ...fallback,
       ...saved,
@@ -265,14 +271,6 @@ const normalizeSavedResultMap = (value, max) => {
   }))
 }
 
-const normalizeSavedTeamMap = (value, max) => {
-  if (!value || typeof value !== 'object') return {}
-  return Object.fromEntries(Object.entries(value).filter(([key, team]) => {
-    const index = Number(key)
-    return Number.isInteger(index) && index >= 0 && index < max && ['green', 'red'].includes(team)
-  }))
-}
-
 const normalizeSavedBooleanMap = (value) => {
   if (!value || typeof value !== 'object') return {}
   return Object.fromEntries(Object.entries(value).filter(([, enabled]) => Boolean(enabled)).map(([key]) => [key, true]))
@@ -285,6 +283,8 @@ const normalizeSavedSideQuestions = (value) => {
   const normalized = value.map(normalizeSideQuestion).filter((item) => item.question && item.answer)
   const oldQuestionIndex = normalized.findIndex((item) => item.question === 'Thứ gì càng gần deadline càng chạy nhanh?')
   if (oldQuestionIndex >= 0) normalized[oldQuestionIndex] = defaultSideQuestions[9]
+  const oldDeputyQuestionIndex = normalized.findIndex((item) => item.question === 'Trưởng phòng C3 hiện tại là Tùng. Vậy phó trưởng BVH C3 hiện tại là ai?')
+  if (oldDeputyQuestionIndex >= 0) normalized[oldDeputyQuestionIndex] = defaultSideQuestions[5]
   return normalized.length ? normalized : defaultSideQuestions
 }
 
@@ -294,7 +294,7 @@ const normalizeSavedGameState = (value) => {
   const hintTexts = Array.isArray(value.hintTexts)
     ? DEFAULT_HINT_TEXTS.map((fallback, index) => cleanText(value.hintTexts[index]) || fallback)
     : DEFAULT_HINT_TEXTS
-  if (hintTexts[SPECIAL_HINT_INDEX] === 'Gợi ý đặc biệt') hintTexts[SPECIAL_HINT_INDEX] = DEFAULT_HINT_TEXTS[SPECIAL_HINT_INDEX]
+  if (LEGACY_SPECIAL_HINT_TEXTS.includes(hintTexts[SPECIAL_HINT_INDEX])) hintTexts[SPECIAL_HINT_INDEX] = DEFAULT_HINT_TEXTS[SPECIAL_HINT_INDEX]
 
   return {
     questionData,
@@ -302,7 +302,6 @@ const normalizeSavedGameState = (value) => {
     hintTexts,
     results: normalizeSavedResultMap(value.results, questionData.length),
     openedHints: normalizeSavedIndexArray(value.openedHints, DEFAULT_HINT_TEXTS.length),
-    hintOwners: normalizeSavedTeamMap(value.hintOwners, DEFAULT_HINT_TEXTS.length),
     sideQuestions: normalizeSavedSideQuestions(value.sideQuestions),
     revealedMainAnswer: false,
     revealedSideAnswer: false,
@@ -315,6 +314,8 @@ const normalizeSavedGameState = (value) => {
     countdownDuration: Math.max(1, Number(value.countdownDuration) || 20),
     countdown: Number.isFinite(Number(value.countdown)) ? Math.max(0, Number(value.countdown)) : null,
     hintThreshold: Math.max(1, Number(value.hintThreshold) || 2),
+    winningScoreEnabled: value.winningScoreEnabled === true,
+    winningScore: Math.max(1, Number(value.winningScore) || 6),
     selected: null,
     selectedChoiceIndex: null,
   }
@@ -350,7 +351,6 @@ function App() {
   const [results, setResults] = useState(() => savedGameState?.results || {})
   const [selected, setSelected] = useState(() => savedGameState?.selected ?? null)
   const [openedHints, setOpenedHints] = useState(() => savedGameState?.openedHints || [])
-  const [hintOwners, setHintOwners] = useState(() => savedGameState?.hintOwners || {})
   const [hintPrompt, setHintPrompt] = useState(null)
   const [sideQuestions, setSideQuestions] = useState(() => savedGameState?.sideQuestions || defaultSideQuestions)
   const [, setUsedSideQuestionIndexes] = useState([])
@@ -365,6 +365,8 @@ function App() {
   const [countdownDuration, setCountdownDuration] = useState(() => savedGameState?.countdownDuration || 20)
   const [countdown, setCountdown] = useState(() => savedGameState?.countdown ?? null)
   const [hintThreshold, setHintThreshold] = useState(() => savedGameState?.hintThreshold || 2)
+  const [winningScoreEnabled, setWinningScoreEnabled] = useState(() => savedGameState?.winningScoreEnabled || false)
+  const [winningScore, setWinningScore] = useState(() => savedGameState?.winningScore || 6)
   const [importMessage, setImportMessage] = useState('')
   const [sideImportMessage, setSideImportMessage] = useState('')
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(() => savedGameState?.selectedChoiceIndex ?? null)
@@ -372,9 +374,6 @@ function App() {
   const greenScore = Object.values(results).filter((result) => result === 'green').length
   const redScore = Object.values(results).filter((result) => result === 'red').length
   const revealedCount = Object.values(results).filter((result) => result === 'green' || result === 'red').length
-  const greenHints = Object.values(hintOwners).filter((team) => team === 'green').length
-  const redHints = Object.values(hintOwners).filter((team) => team === 'red').length
-  const priorityTeam = greenHints === redHints ? null : greenHints > redHints ? 'green' : 'red'
   const hasAvailableStandardHints = Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => index).some((index) => !openedHints.includes(index))
   const isSpecialHintOpen = openedHints.includes(SPECIAL_HINT_INDEX)
   const visibleHintIndexes = Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => index)
@@ -394,7 +393,6 @@ function App() {
       results,
       selected,
       openedHints,
-      hintOwners,
       sideQuestions,
       revealedMainAnswer,
       revealedSideAnswer,
@@ -406,6 +404,8 @@ function App() {
       countdownDuration,
       countdown,
       hintThreshold,
+      winningScoreEnabled,
+      winningScore,
       selectedChoiceIndex,
     })
   }, [
@@ -415,7 +415,6 @@ function App() {
     results,
     selected,
     openedHints,
-    hintOwners,
     sideQuestions,
     revealedMainAnswer,
     revealedSideAnswer,
@@ -427,6 +426,8 @@ function App() {
     countdownDuration,
     countdown,
     hintThreshold,
+    winningScoreEnabled,
+    winningScore,
     selectedChoiceIndex,
   ])
 
@@ -435,13 +436,10 @@ function App() {
     setRevealedSideAnswer(false)
   }
 
-  const openNextStandardHint = (team) => {
+  const openNextStandardHint = () => {
     const hintIndex = Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => index).find((index) => !openedHints.includes(index))
     if (!Number.isInteger(hintIndex)) return
     setOpenedHints((current) => (current.includes(hintIndex) ? current : [...current, hintIndex]))
-    if (team === 'green' || team === 'red') {
-      setHintOwners((current) => ({ ...current, [hintIndex]: team }))
-    }
   }
 
   const openSpecialHint = () => {
@@ -452,7 +450,6 @@ function App() {
     setResults({})
     setSelected(null)
     setOpenedHints([])
-    setHintOwners({})
     setHintPrompt(null)
     setUsedSideQuestionIndexes([])
     setRevealedMainAnswer(false)
@@ -491,19 +488,30 @@ function App() {
     setRevealedMainAnswer(false)
   }
 
+  const stopModalClick = (event) => {
+    event.stopPropagation()
+  }
+
+  const closeWinnerModal = () => {
+    setWinnerModal(false)
+    setCountdown(null)
+    setCountdownPaused(false)
+    setCelebratingWinner(null)
+  }
+
   const markAnswer = (result) => {
     setResults({ ...results, [selected]: result })
     closeMainQuestion()
     if (result === 'green' || result === 'red') {
-      const currentScore = Object.values(results).filter((value) => value === result).length
-      const nextScore = currentScore + 1
-      const currentTotalScore = Object.values(results).filter((value) => value === 'green' || value === 'red').length
-      const nextTotalScore = currentTotalScore + 1
-      if (nextScore === 6) {
+      const currentTeamScore = Object.values(results).filter((value) => value === result).length
+      const nextTeamScore = currentTeamScore + 1
+      if (winningScoreEnabled && nextTeamScore >= winningScore) {
         setWinner(result)
         setCelebratingWinner(result)
         return
       }
+      const currentTotalScore = Object.values(results).filter((value) => value === 'green' || value === 'red').length
+      const nextTotalScore = currentTotalScore + 1
       const hintMilestone = getNextUnpromptedHintMilestone({
         totalScore: nextTotalScore,
         hintThreshold,
@@ -511,7 +519,7 @@ function App() {
       })
       if (hintMilestone !== null && hasAvailableStandardHints) {
         setPromptedMilestones({ ...promptedMilestones, [hintMilestone]: true })
-        openNextStandardHint(result)
+        openNextStandardHint()
       }
     }
   }
@@ -707,8 +715,8 @@ function App() {
         </div>
         <div className="overview">
           <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
-          <div className={`team-score team-green ${priorityTeam === 'green' ? 'is-priority' : ''}`}><span>Đội Xanh</span><strong>{greenScore}</strong><small>điểm</small>{priorityTeam === 'green' && <em>Ưu tiên trả lời</em>}</div>
-          <div className={`team-score team-red ${priorityTeam === 'red' ? 'is-priority' : ''}`}><span>Đội Đỏ</span><strong>{redScore}</strong><small>điểm</small>{priorityTeam === 'red' && <em>Ưu tiên trả lời</em>}</div>
+          <div className="team-score team-green"><span>Đội Xanh</span><strong>{greenScore}</strong><small>điểm</small></div>
+          <div className="team-score team-red"><span>Đội Đỏ</span><strong>{redScore}</strong><small>điểm</small></div>
         </div>
       </header>
 
@@ -721,15 +729,17 @@ function App() {
           const result = results[index]
           const isOpen = result === 'green' || result === 'red'
           const isWrong = result === 'wrong'
+          const isMultipleChoiceCard = item.questionType === QUESTION_TYPE_MULTIPLE
           const scoredTeamLabel = result === 'green' ? 'Đội Xanh' : 'Đội Đỏ'
           return (
             <button
-              className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''}`}
+              className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''} ${isMultipleChoiceCard ? 'is-multiple-choice' : ''}`}
               data-testid={`question-card-${index + 1}`}
               key={index}
               onClick={() => { if (!result) openMainQuestion(index) }}
               disabled={Boolean(result)}
             >
+              {!result && isMultipleChoiceCard && <span className="question-type-badge">TN</span>}
               {!isOpen && !isWrong && <span className="card-preview">{genericQuestionIcons[index]}</span>}
               {isOpen && <span className="card-icon">✓</span>}
               <strong className={isOpen ? 'scored-team-label' : undefined}>{isOpen ? scoredTeamLabel : String(index + 1).padStart(2, '0')}</strong>
@@ -747,38 +757,41 @@ function App() {
         const hasSelectedChoice = selectedChoiceIndex !== null
         const selectedChoiceIsCorrect = selectedChoiceIndex === correctChoiceIndex
         const selectedQuestionImageSrc = getQuestionImageSrc(selectedQuestion)
+        const renderChoiceOptions = (revealed) => (
+          <div className={`choice-list ${revealed ? 'is-revealed' : 'is-selecting'}`} aria-label="Lựa chọn trắc nghiệm">
+            {choices.map((choice, choiceIndex) => {
+              const isSelectedChoice = selectedChoiceIndex === choiceIndex
+              const isCorrectChoice = choiceIndex === correctChoiceIndex
+              return (
+                <button
+                  className={`choice-option ${isSelectedChoice ? 'is-selected' : ''} ${revealed && isCorrectChoice ? 'is-correct' : ''} ${revealed && isSelectedChoice && !isCorrectChoice ? 'is-incorrect' : ''}`}
+                  data-testid={`choice-option-${choiceLetters[choiceIndex].toLowerCase()}`}
+                  data-choice-value={choice}
+                  key={choiceLetters[choiceIndex]}
+                  type="button"
+                  aria-pressed={isSelectedChoice}
+                  onClick={() => setSelectedChoiceIndex(choiceIndex)}
+                >
+                  <span>{choiceLetters[choiceIndex]}</span>
+                  <strong>{choice || `Lựa chọn ${choiceIndex + 1}`}</strong>
+                </button>
+              )
+            })}
+          </div>
+        )
         return (
-        <div className="modal-backdrop" role="presentation">
-          <section className="answer-modal main-question-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
+        <div className="modal-backdrop" role="presentation" onClick={closeMainQuestion}>
+          <section className="answer-modal main-question-modal" role="dialog" aria-modal="true" aria-labelledby={selectedQuestionImageSrc ? undefined : 'question-title'} aria-label={selectedQuestionImageSrc ? `Câu hỏi ${String(selected + 1).padStart(2, '0')}` : undefined} onClick={stopModalClick}>
             <button className="close-modal" onClick={closeMainQuestion} aria-label="Đóng">×</button>
-            <p className="modal-label">CÂU HỎI {String(selected + 1).padStart(2, '0')}</p>
-            <h2 id="question-title">{selectedQuestion.question}</h2>
+            <p className="modal-label">CÂU HỎI {String(selected + 1).padStart(2, '0')}{isMultipleChoice ? ' - TRẮC NGHIỆM' : ''}</p>
+            {!selectedQuestionImageSrc && <h2 id="question-title">{selectedQuestion.question}</h2>}
             {selectedQuestionImageSrc && <img className="question-image" src={selectedQuestionImageSrc} alt="Hình minh họa câu hỏi" />}
             {revealedMainAnswer ? (
               <>
                 {isMultipleChoice ? (
                   <>
-                    <div className="choice-list" aria-label="Lựa chọn trắc nghiệm">
-                      {choices.map((choice, choiceIndex) => {
-                        const isSelectedChoice = selectedChoiceIndex === choiceIndex
-                        const isCorrectChoice = choiceIndex === correctChoiceIndex
-                        return (
-                          <button
-                            className={`choice-option ${isSelectedChoice ? 'is-selected' : ''} ${isCorrectChoice ? 'is-correct' : ''} ${isSelectedChoice && !isCorrectChoice ? 'is-incorrect' : ''}`}
-                            data-testid={`choice-option-${choiceLetters[choiceIndex].toLowerCase()}`}
-                            data-choice-value={choice}
-                            key={choiceLetters[choiceIndex]}
-                            type="button"
-                            aria-pressed={isSelectedChoice}
-                            onClick={() => setSelectedChoiceIndex(choiceIndex)}
-                          >
-                            <span>{choiceLetters[choiceIndex]}</span>
-                            <strong>{choice || `Lựa chọn ${choiceIndex + 1}`}</strong>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    <p className="modal-question">{hasSelectedChoice ? `Đã chọn ${choiceLetters[selectedChoiceIndex]}. ${choices[selectedChoiceIndex] || `Lựa chọn ${selectedChoiceIndex + 1}`}${selectedChoiceIsCorrect ? ' — đáp án đúng.' : ` — đáp án đúng là ${getQuestionAnswer(selectedQuestion)}.`}` : `Đáp án đúng là ${choiceLetters[correctChoiceIndex]}. ${getQuestionAnswer(selectedQuestion)}.`}</p>
+                    {renderChoiceOptions(true)}
+                    <p className="modal-question">{hasSelectedChoice ? `Đã chọn ${choiceLetters[selectedChoiceIndex]}. ${choices[selectedChoiceIndex] || `Lựa chọn ${selectedChoiceIndex + 1}`}${selectedChoiceIsCorrect ? ' - đáp án đúng.' : ` - đáp án đúng là ${choiceLetters[correctChoiceIndex]}. ${getQuestionAnswer(selectedQuestion)}.`}` : `Đáp án đúng là ${choiceLetters[correctChoiceIndex]}. ${getQuestionAnswer(selectedQuestion)}.`}</p>
                   </>
                 ) : (
                   <p className="side-answer main-answer"><span>Đáp án</span><strong>{getQuestionAnswer(selectedQuestion)}</strong></p>
@@ -790,9 +803,17 @@ function App() {
                 </div>
               </>
             ) : (
-              <div className="modal-actions main-reveal-actions">
-                <button className="countdown-button" onClick={() => setRevealedMainAnswer(true)}>Hiện đáp án</button>
-              </div>
+              <>
+                {isMultipleChoice && (
+                  <>
+                    {renderChoiceOptions(false)}
+                    <p className="modal-question choice-instruction">{hasSelectedChoice ? `Đã chọn ${choiceLetters[selectedChoiceIndex]}. Bấm Hiện đáp án để kiểm tra.` : 'Chọn một phương án trước khi hiện đáp án.'}</p>
+                  </>
+                )}
+                <div className="modal-actions main-reveal-actions">
+                  <button className="countdown-button" onClick={() => setRevealedMainAnswer(true)}>{isMultipleChoice ? 'Hiện đáp án trắc nghiệm' : 'Hiện đáp án'}</button>
+                </div>
+              </>
             )}
           </section>
         </div>
@@ -805,8 +826,8 @@ function App() {
         if (!hintPrompt.sideQuestionCleared) {
           const promptedTeamName = hintPrompt.team === 'green' ? 'Đội Xanh' : 'Đội Đỏ'
           return (
-            <div className="modal-backdrop" role="presentation">
-              <section className="answer-modal hint-modal side-question-modal" role="dialog" aria-modal="true">
+            <div className="modal-backdrop" role="presentation" onClick={closeHintPrompt}>
+              <section className="answer-modal hint-modal side-question-modal" role="dialog" aria-modal="true" onClick={stopModalClick}>
                 <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
                 <p className="modal-label">CÂU HỎI PHỤ {String(sideQuestionIndex + 1).padStart(2, '0')}</p>
                 <h2>{sideQuestion.question}</h2>
@@ -836,20 +857,20 @@ function App() {
           )
         }
         return (
-        <div className="modal-backdrop" role="presentation">
-          <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
+        <div className="modal-backdrop" role="presentation" onClick={closeHintPrompt}>
+          <section className="answer-modal hint-modal" role="dialog" aria-modal="true" onClick={stopModalClick}>
             <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
             <p className="modal-label">CHỌN MỘT GỢI Ý</p>
             <h2>Mở ô nào?</h2>
-            <div className="hint-picker">{Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); setHintOwners({ ...hintOwners, [index]: hintPrompt.team }); closeHintPrompt() }}>?</button>)}</div>
+            <div className="hint-picker">{Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => <button key={index} disabled={openedHints.includes(index)} onClick={() => { setOpenedHints([...openedHints, index]); closeHintPrompt() }}>?</button>)}</div>
           </section>
         </div>
         )
       })()}
 
       {viewHint !== null && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
+        <div className="modal-backdrop" role="presentation" onClick={() => setViewHint(null)}>
+          <section className="answer-modal hint-modal" role="dialog" aria-modal="true" onClick={stopModalClick}>
             <button className="close-modal" onClick={() => setViewHint(null)} aria-label="Đóng">×</button>
             <p className="modal-label">GỢI Ý ĐÃ MỞ</p>
             <h2>{hintTexts[viewHint]}</h2>
@@ -859,9 +880,9 @@ function App() {
       )}
 
       {winnerModal && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
-            <button className="close-modal" onClick={() => { setWinnerModal(false); setCountdown(null); setCountdownPaused(false); setCelebratingWinner(null) }} aria-label="Đóng">×</button>
+        <div className="modal-backdrop" role="presentation" onClick={closeWinnerModal}>
+          <section className="answer-modal hint-modal" role="dialog" aria-modal="true" onClick={stopModalClick}>
+            <button className="close-modal" onClick={closeWinnerModal} aria-label="Đóng">×</button>
             {countdown !== null && countdown > 0 ? <div className="countdown-display" role="timer" aria-live="assertive"><span>THỜI GIAN CÒN LẠI</span><div className="countdown-value"><strong>{countdown}</strong><small>GIÂY</small></div><button className="pause-countdown-button" onClick={() => setCountdownPaused(!countdownPaused)}>{countdownPaused ? 'Tiếp tục' : 'Dừng'}</button></div> : <><p className="modal-label">THỬ THÁCH TỐI THƯỢNG</p><h2>{overallQuestion}</h2><p className="modal-question">Chọn đội trả lời đúng đáp án thử thách tối thượng.</p><div className="modal-actions winner-actions"><button className="countdown-button" onClick={() => { setCountdown(countdownDuration); setCountdownPaused(false) }}>{countdown === 0 ? 'Hết giờ — đếm lại' : 'Đếm giây'}</button><button className="green-action" onClick={() => { setWinner('green'); setWinnerModal(false); setCelebratingWinner('green') }}>Đội Xanh chiến thắng</button><button className="red-action" onClick={() => { setWinner('red'); setWinnerModal(false); setCelebratingWinner('red') }}>Đội Đỏ chiến thắng</button></div></>}
           </section>
         </div>
@@ -896,6 +917,23 @@ function App() {
             </section>
             <label className="field full-field">Câu hỏi tổng thể<input value={overallQuestion} onChange={(event) => setOverallQuestion(event.target.value)} /></label>
             <label className="field full-field">Thời gian đếm ngược Thử thách tối thượng (giây)<input type="number" min="1" value={countdownDuration} onChange={(event) => setCountdownDuration(Math.max(1, Number(event.target.value) || 1))} /></label>
+            <section className={`csv-import winning-score-panel ${winningScoreEnabled ? 'is-enabled' : ''}`}>
+              <div>
+                <span>ĐIỂM CHIẾN THẮNG</span>
+                <h2>Điểm thắng tự động</h2>
+                <p>{winningScoreEnabled ? `Đang bật: đội nào đạt ${winningScore} điểm sau khi trả lời đúng sẽ chiến thắng.` : 'Mặc định đang tắt. Bật khi muốn đội đạt mốc điểm tự động chiến thắng.'}</p>
+              </div>
+              <div className="csv-actions winning-score-actions">
+                {winningScoreEnabled ? (
+                  <>
+                    <label className="field winning-score-field">Điểm thắng<input type="number" min="1" value={winningScore} onChange={(event) => setWinningScore(Math.max(1, Number(event.target.value) || 1))} /></label>
+                    <button className="clear-questions-button winning-score-disable" type="button" onClick={() => setWinningScoreEnabled(false)}>Tắt điểm chiến thắng</button>
+                  </>
+                ) : (
+                  <button className="csv-export winning-score-enable" type="button" onClick={() => setWinningScoreEnabled(true)}>Set điểm chiến thắng</button>
+                )}
+              </div>
+            </section>
             <div className="hint-fields">{hintTexts.map((hint, index) => <label className="field" key={index}>Gợi ý {index + 1}<input value={hint} onChange={(event) => setHintTexts(hintTexts.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} /></label>)}</div>
             <div className="editor-topics">
               {topics.map((topic, topicIndex) => (
@@ -913,12 +951,27 @@ function App() {
                       return (
                         <article className="edit-question" key={index}>
                           <b>{String(index + 1).padStart(2, '0')}</b>
-                          <label className="field">Loại câu hỏi
-                            <select value={questionType} onChange={(event) => updateQuestion(index, { questionType: event.target.value })}>
-                              <option value={QUESTION_TYPE_SINGLE}>Một đáp án</option>
-                              <option value={QUESTION_TYPE_MULTIPLE}>Trắc nghiệm</option>
-                            </select>
-                          </label>
+                          <div className="field question-mode-field">
+                            <span>Loại câu hỏi</span>
+                            <div className="mode-switch" role="group" aria-label={`Loại câu hỏi ${index + 1}`}>
+                              <button
+                                className={questionType === QUESTION_TYPE_SINGLE ? 'is-active' : ''}
+                                type="button"
+                                aria-pressed={questionType === QUESTION_TYPE_SINGLE}
+                                onClick={() => updateQuestion(index, { questionType: QUESTION_TYPE_SINGLE })}
+                              >
+                                Một đáp án
+                              </button>
+                              <button
+                                className={questionType === QUESTION_TYPE_MULTIPLE ? 'is-active' : ''}
+                                type="button"
+                                aria-pressed={questionType === QUESTION_TYPE_MULTIPLE}
+                                onClick={() => updateQuestion(index, { questionType: QUESTION_TYPE_MULTIPLE })}
+                              >
+                                Trắc nghiệm
+                              </button>
+                            </div>
+                          </div>
                           <label className="field">Câu hỏi<input value={item.question} onChange={(event) => updateQuestion(index, { question: event.target.value })} /></label>
                           <div className="field image-picker-field">
                             <span>Ảnh minh họa</span>
@@ -1003,8 +1056,8 @@ function App() {
       )}
 
       {clearQuestionsConfirm && (
-        <div className="modal-backdrop editor-confirm-backdrop" role="presentation">
-          <section className="answer-modal clear-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="clear-questions-title">
+        <div className="modal-backdrop editor-confirm-backdrop" role="presentation" onClick={() => setClearQuestionsConfirm(false)}>
+          <section className="answer-modal clear-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="clear-questions-title" onClick={stopModalClick}>
             <button className="close-modal" onClick={() => setClearQuestionsConfirm(false)} aria-label="Đóng">×</button>
             <p className="modal-label">XÁC NHẬN XÓA</p>
             <h2 id="clear-questions-title">Xóa toàn bộ câu hỏi chính?</h2>
