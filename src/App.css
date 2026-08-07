@@ -112,12 +112,64 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   min-height: clamp(88px, 10vh, 108px);
 }
 
+.ultimate-answer {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  margin: 2px auto 18px;
+  padding: 16px 22px;
+  border: 3px solid #fff0a3;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ffdf63, #efa92b);
+  box-shadow: 0 5px 0 #b56814, 0 12px 24px #0006;
+}
+
+.ultimate-answer span {
+  color: #7a1225;
+  font: 800 .72rem 'Be Vietnam Pro', sans-serif;
+  letter-spacing: .12em;
+}
+
+.ultimate-answer strong {
+  color: #512300;
+  font: 800 clamp(1.6rem, 4vw, 3rem)/1 'Barlow Condensed', sans-serif;
+}
+
+.master-question {
+  position: relative;
+  overflow: hidden;
+  padding: 24px 26px;
+}
+
+.master-question strong {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  font-size: clamp(1.08rem, 2.08vw, 1.5rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+  text-wrap: normal;
+}
+
+.master-question::after {
+  right: -64px;
+  bottom: -58px;
+  opacity: .16;
+}
+
 .setup-button:disabled,
 .setup-button:disabled:hover {
   cursor: not-allowed;
   opacity: .45;
   transform: none;
   filter: none;
+}
+
+.reset-button {
+  color: #fff7db;
+  background: linear-gradient(145deg, #db3c3f, #9b172a);
+  box-shadow: 0 4px 0 #6f1021;
 }
 
 .hint-grid.has-special-hint {
@@ -502,7 +554,7 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
 }
 
 .main-winner-actions {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .question-grid:not(.topic-grid) .question-card.is-open .scored-team-label {
@@ -538,5 +590,445 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   .main-winner-actions,
   .side-winner-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Projection layout v2: wide, balanced board and screen-scaled dialogs. */
+@media(min-width:921px) {
+  .game-shell {
+    --projection-width: min(94vw, 1720px);
+    --projection-gap: clamp(10px, calc(.38vw + .42vh), 18px);
+    --projection-topbar: clamp(76px, calc(2.1vw + 3.1vh), 104px);
+    display: block;
+    height: 100vh;
+    min-height: 100vh;
+    padding: clamp(14px, 1.7vh, 26px) clamp(18px, 3.2vw, 72px) clamp(10px, 1.4vh, 18px);
+    overflow: hidden;
+  }
+
+  .game-header,
+  .hint-grid,
+  .question-grid,
+  footer {
+    width: var(--projection-width);
+    max-width: none;
+    margin-inline: auto;
+  }
+
+  .game-header {
+    margin-bottom: var(--projection-gap);
+    padding: calc(var(--projection-topbar) + clamp(10px, 1.2vh, 16px)) clamp(18px, 1.7vw, 30px) clamp(16px, 1.8vh, 24px);
+  }
+
+  .game-header::before,
+  .brand-line {
+    height: var(--projection-topbar);
+    min-height: var(--projection-topbar);
+  }
+
+  .brand-line {
+    left: clamp(18px, 1.7vw, 30px);
+    right: clamp(18px, 1.7vw, 30px);
+  }
+
+  .ceyc-combined-logo {
+    width: clamp(260px, calc(10vw + 5.2vh), 420px);
+    max-height: calc(var(--projection-topbar) - 8px);
+  }
+
+  .status-controls {
+    gap: clamp(7px, .62vw, 12px);
+  }
+
+  .progress,
+  .hint-mode,
+  .setup-button {
+    height: clamp(40px, calc(.78vw + 2.1vh), 56px);
+    padding-inline: clamp(10px, .82vw, 16px);
+    font-size: clamp(.68rem, calc(.28vw + .42vh), .88rem);
+  }
+
+  .hint-mode select {
+    font-size: clamp(.66rem, calc(.25vw + .38vh), .82rem);
+  }
+
+  .overview {
+    gap: var(--projection-gap);
+  }
+
+  .overview > div,
+  .overview > button {
+    min-height: clamp(118px, calc(3.4vw + 6.2vh), 178px);
+  }
+
+  .master-question {
+    padding: clamp(20px, calc(1.05vw + 1.15vh), 34px);
+  }
+
+  .master-question strong {
+    font-size: clamp(1.05rem, calc(.56vw + .72vh), 1.62rem);
+    line-height: 1.08;
+  }
+
+  .team-score strong {
+    font-size: clamp(3.5rem, calc(1.9vw + 2.9vh), 6.1rem);
+  }
+
+  .hint-grid {
+    gap: var(--projection-gap);
+    margin-bottom: var(--projection-gap);
+    padding: 0;
+  }
+
+  .hint-card {
+    height: clamp(58px, calc(2.1vw + 3.4vh), 96px);
+    padding-left: clamp(20px, 1.4vw, 34px);
+  }
+
+  .hint-card span {
+    font-size: clamp(1.75rem, calc(.9vw + 1.5vh), 2.9rem);
+  }
+
+  .hint-card.is-unlocked span {
+    font-size: clamp(.86rem, calc(.34vw + .58vh), 1.25rem);
+  }
+
+  .question-grid:not(.topic-grid) {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: none;
+    gap: var(--projection-gap);
+    flex: none;
+    min-height: 0;
+    padding: clamp(12px, 1.35vh, 20px);
+  }
+
+  .question-grid:not(.topic-grid) .question-card,
+  .question-grid:not(.topic-grid) .question-card:not(.is-open):not(.is-wrong) {
+    width: 100%;
+    height: auto;
+    min-height: clamp(78px, calc(2.2vw + 3vh), 154px);
+    aspect-ratio: 2.65 / 1;
+  }
+
+  .question-grid:not(.topic-grid) .question-card strong {
+    font-size: clamp(2.35rem, calc(1.35vw + 2vh), 4.8rem);
+  }
+
+  .card-preview {
+    font-size: clamp(2rem, calc(1.05vw + 1.65vh), 4rem);
+  }
+
+  footer {
+    margin-top: clamp(8px, 1.15vh, 14px);
+  }
+
+  .modal-backdrop {
+    padding: clamp(20px, 3vmin, 56px);
+  }
+
+  .answer-modal {
+    width: min(84vw, 1500px);
+    max-height: 88vh;
+    padding: clamp(32px, calc(1.8vw + 1.8vh), 66px);
+    border-width: clamp(4px, .34vmin, 7px);
+    border-radius: clamp(16px, 1.1vw, 28px);
+  }
+
+  .modal-label {
+    margin-bottom: clamp(14px, 1.4vh, 24px);
+    font-size: clamp(.78rem, calc(.36vw + .48vh), 1.08rem);
+  }
+
+  .answer-modal h2 {
+    font-size: clamp(2.7rem, calc(2.2vw + 2.8vh), 6.7rem);
+    line-height: .92;
+  }
+
+  .modal-question {
+    margin: clamp(18px, 2.2vh, 34px) 0 clamp(22px, 2.8vh, 42px);
+    font-size: clamp(1rem, calc(.44vw + .7vh), 1.45rem);
+  }
+
+  .question-image {
+    max-height: clamp(300px, 48vh, 620px);
+    margin-top: clamp(18px, 2vh, 30px);
+  }
+
+  .modal-actions {
+    gap: clamp(10px, 1vw, 18px);
+  }
+
+  .modal-actions button,
+  .modal-actions .countdown-button {
+    min-height: clamp(56px, 6vh, 88px);
+    font-size: clamp(.9rem, calc(.36vw + .68vh), 1.32rem);
+  }
+
+  .close-modal {
+    top: clamp(14px, 1.6vh, 26px);
+    right: clamp(18px, 1.8vw, 34px);
+    font-size: clamp(2.1rem, calc(1.2vw + 1.5vh), 3.6rem);
+  }
+
+  .answer-modal.main-question-modal {
+    width: min(58vw, 1120px);
+    max-height: 82vh;
+    padding: clamp(24px, calc(1.05vw + 1.25vh), 44px);
+  }
+
+  .main-question-modal .modal-label {
+    font-size: clamp(.66rem, calc(.24vw + .36vh), .88rem);
+  }
+
+  .main-question-modal h2 {
+    font-size: clamp(2.05rem, calc(1.28vw + 1.65vh), 4.15rem);
+    line-height: .94;
+  }
+
+  .main-question-modal .question-image {
+    max-height: clamp(260px, 42vh, 480px);
+    margin-top: clamp(14px, 1.6vh, 24px);
+  }
+
+  .main-question-modal .modal-actions button,
+  .main-question-modal .modal-actions .countdown-button {
+    min-height: clamp(48px, 5.1vh, 72px);
+    font-size: clamp(.82rem, calc(.28vw + .5vh), 1.08rem);
+  }
+
+  .answer-modal.side-question-modal {
+    width: min(50vw, 960px);
+    max-height: 78vh;
+    padding: clamp(24px, calc(1vw + 1.2vh), 42px);
+  }
+
+  .side-question-modal .modal-label {
+    font-size: clamp(.66rem, calc(.25vw + .35vh), .86rem);
+  }
+
+  .side-question-modal h2 {
+    font-size: clamp(1.9rem, calc(1.15vw + 1.45vh), 3.7rem);
+    line-height: .94;
+  }
+
+  .side-question-modal .modal-question,
+  .side-question-modal .side-question-state strong,
+  .side-question-modal .side-answer strong {
+    font-size: clamp(.86rem, calc(.32vw + .52vh), 1.18rem);
+  }
+
+  .side-question-modal .modal-actions button,
+  .side-question-modal .modal-actions .countdown-button {
+    min-height: clamp(44px, 4.8vh, 68px);
+    font-size: clamp(.78rem, calc(.28vw + .48vh), 1rem);
+  }
+}
+
+/* Stage layout: fill tall projection screens without reopening mobile spacing. */
+@media(min-width:921px) and (min-height:820px) {
+  .game-shell {
+    display: flex;
+    height: 100vh;
+    min-height: 100vh;
+    flex-direction: column;
+    padding: clamp(18px, 2.1vh, 30px) clamp(22px, 4vw, 84px) clamp(14px, 1.8vh, 24px);
+  }
+
+  .game-header,
+  .hint-grid,
+  .question-grid,
+  footer {
+    width: min(100%, 1680px);
+  }
+
+  .game-header {
+    flex: 0 0 auto;
+    margin-bottom: clamp(12px, 1.6vh, 20px);
+    padding-bottom: clamp(16px, 2vh, 22px);
+  }
+
+  .overview > div,
+  .overview > button {
+    min-height: clamp(142px, 15.4vh, 176px);
+  }
+
+  .hint-grid {
+    flex: 0 0 auto;
+    gap: clamp(14px, 1.4vw, 22px);
+    margin-bottom: clamp(12px, 1.7vh, 22px);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .hint-card {
+    height: clamp(78px, 8.2vh, 108px);
+  }
+
+  .question-grid:not(.topic-grid) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.2vh, 16px);
+    padding: clamp(14px, 1.6vh, 22px);
+    align-content: stretch;
+  }
+
+  .question-grid:not(.topic-grid) .question-card,
+  .question-grid:not(.topic-grid) .question-card:not(.is-open):not(.is-wrong) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .question-grid:not(.topic-grid) .question-card strong {
+    font-size: clamp(3.2rem, 4.6vh, 5.1rem);
+  }
+
+  .card-preview {
+    font-size: clamp(2.45rem, 4.1vh, 4.4rem);
+  }
+
+  footer {
+    flex: 0 0 auto;
+    margin-top: clamp(8px, 1.3vh, 16px);
+  }
+}
+
+@media(min-width:1600px) and (min-height:900px) {
+  .game-header,
+  .hint-grid,
+  .question-grid,
+  footer {
+    width: min(100%, 1760px);
+  }
+
+  .master-question strong {
+    font-size: clamp(1.18rem, 1.62vw, 1.75rem);
+  }
+}
+
+/* Projection scaling: grow from both screen width and height, with caps. */
+@media(min-width:921px) and (min-height:820px) {
+  .game-shell {
+    --stage-gap: clamp(10px, calc(.28vw + .48vh), 19px);
+    --stage-panel-width: min(100%, 90vw, 1860px);
+    --stage-topbar: clamp(84px, calc(3.2vw + 2.3vh), 108px);
+    --stage-control-height: clamp(42px, calc(1vw + 2.2vh), 58px);
+    --stage-question-number: clamp(3.2rem, calc(2.1vw + 1.8vh), 5.6rem);
+    --stage-symbol: clamp(2.4rem, calc(1.6vw + 1.45vh), 4.5rem);
+    --stage-master-text: clamp(1.12rem, calc(.72vw + .68vh), 1.85rem);
+    --stage-hint-text: clamp(1.75rem, calc(1.1vw + 1.25vh), 3rem);
+    padding: clamp(14px, 1.8vh, 26px) clamp(18px, 3.8vw, 80px) clamp(12px, 1.6vh, 22px);
+  }
+
+  .game-header,
+  .hint-grid,
+  .question-grid,
+  footer {
+    max-width: none;
+    width: var(--stage-panel-width);
+  }
+
+  .game-header {
+    padding-top: calc(var(--stage-topbar) + clamp(10px, 1.3vh, 18px));
+    padding-inline: clamp(20px, 1.9vw, 34px);
+  }
+
+  .game-header::before {
+    height: var(--stage-topbar);
+  }
+
+  .brand-line {
+    left: clamp(20px, 1.9vw, 34px);
+    right: clamp(20px, 1.9vw, 34px);
+    height: var(--stage-topbar);
+    min-height: var(--stage-topbar);
+  }
+
+  .ceyc-combined-logo {
+    width: clamp(300px, calc(12vw + 5.6vh), 440px);
+    max-height: calc(var(--stage-topbar) - 10px);
+  }
+
+  .status-controls {
+    gap: clamp(8px, .72vw, 14px);
+  }
+
+  .progress,
+  .hint-mode,
+  .setup-button {
+    height: var(--stage-control-height);
+    padding-inline: clamp(12px, 1vw, 18px);
+    font-size: clamp(.72rem, calc(.38vw + .42vh), .92rem);
+  }
+
+  .progress span {
+    font-size: clamp(.95rem, calc(.54vw + .48vh), 1.18rem);
+  }
+
+  .hint-mode select {
+    font-size: clamp(.68rem, calc(.34vw + .38vh), .86rem);
+  }
+
+  .overview {
+    gap: var(--stage-gap);
+  }
+
+  .overview > div,
+  .overview > button {
+    min-height: clamp(136px, calc(6.6vw + 5.6vh), 196px);
+  }
+
+  .master-question {
+    padding: clamp(22px, calc(1.35vw + 1.2vh), 42px);
+  }
+
+  .master-question span {
+    font-size: clamp(.72rem, calc(.4vw + .38vh), .95rem);
+  }
+
+  .master-question strong {
+    font-size: var(--stage-master-text);
+    line-height: 1.08;
+  }
+
+  .team-score strong {
+    font-size: clamp(4rem, calc(2.8vw + 2.7vh), 6.7rem);
+  }
+
+  .team-score span,
+  .team-score small {
+    font-size: clamp(.78rem, calc(.4vw + .42vh), 1rem);
+  }
+
+  .hint-grid {
+    gap: var(--stage-gap);
+  }
+
+  .hint-card {
+    height: clamp(76px, calc(3.2vw + 3.1vh), 118px);
+    padding-left: clamp(22px, 1.5vw, 36px);
+  }
+
+  .hint-card span {
+    font-size: var(--stage-hint-text);
+  }
+
+  .hint-card.is-unlocked span {
+    font-size: clamp(.9rem, calc(.48vw + .56vh), 1.38rem);
+  }
+
+  .question-grid:not(.topic-grid) {
+    gap: var(--stage-gap);
+  }
+
+  .question-grid:not(.topic-grid) .question-card strong {
+    font-size: var(--stage-question-number);
+  }
+
+  .card-preview {
+    font-size: var(--stage-symbol);
   }
 }

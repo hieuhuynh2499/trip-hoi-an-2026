@@ -10,11 +10,15 @@ const QUESTION_TYPE_MULTIPLE = 'multiple'
 const MULTIPLE_CHOICE_COUNT = 4
 const STANDARD_HINT_COUNT = 3
 const SPECIAL_HINT_INDEX = 3
+const GAME_STORAGE_KEY = 'trip-hoi-an-2026-game-state-v1'
 const choiceLetters = ['A', 'B', 'C', 'D']
 const questionTypeLabels = {
   [QUESTION_TYPE_SINGLE]: 'Một đáp án',
   [QUESTION_TYPE_MULTIPLE]: 'Trắc nghiệm',
 }
+const DEFAULT_OVERALL_QUESTION = 'Center 3 đã bước sang năm thứ 2. Trong kỷ nguyên AI, nếu chỉ đứng yên và chờ đợi, chúng ta rất dễ bỏ lỡ những cơ hội mới. Theo bạn, câu tục ngữ nào của người Việt diễn tả đúng nhất điều đó?'
+const ULTIMATE_ANSWER = 'Trâu chậm uống nước đục'
+const DEFAULT_HINT_TEXTS = ['Một câu tục ngữ gồm 5 chữ', 'Câu tục ngữ nói về tốc độ quyết định cơ hội', 'Mở đầu bằng con giáp đứng thứ hai trong 12 con giáp.', 'T_ _ _ c_ _m  u_ _g   n_ _c _ _c']
 
 const cleanText = (value) => String(value ?? '').trim()
 const isExternalAssetUrl = (value) => /^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(cleanText(value))
@@ -149,7 +153,7 @@ const defaultQuestions = [
   ['Giao gì khiến chúng ta lo lắng?', 'Giao trứng cho ác.', 'cau-6'],
   ['Lá gì luôn ngửi rất say?', 'Lá mơ.', 'cau-7'],
   ['Điểm gì ăn được?', 'Điểm tâm.', 'cau-8'],
-  ['Thứ gì càng gần deadline càng chạy nhanh?', 'Người chạy deadline.', 'cau-11'],
+  ['Cái gì đánh cha, đánh má, đánh anh, đánh chị, đánh em?', 'Bàn chải đánh răng.', 'cau-11'],
   ['Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', 'Không còn cục nào.', 'cau-9'],
   ['Làm gì mà không phát ra tiếng?', 'Làm thinh.', 'cau-10'],
 ]
@@ -190,7 +194,7 @@ const defaultSideQuestions = [
   { question: 'Giao gì khiến chúng ta lo lắng?', answer: 'Giao trứng cho ác.' },
   { question: 'Lá gì luôn ngửi rất say?', answer: 'Lá mơ.' },
   { question: 'Điểm gì ăn được?', answer: 'Điểm tâm.' },
-  { question: 'Thứ gì càng gần deadline càng chạy nhanh?', answer: 'Người chạy deadline.' },
+  { question: 'Cái gì đánh cha, đánh má, đánh anh, đánh chị, đánh em?', answer: 'Bàn chải đánh răng.' },
   { question: 'Nếu bạn Tí có 5 cục kẹo chia đều cho 5 người bạn của mình, thì bạn Tí còn mấy cục kẹo?', answer: 'Không còn cục nào.' },
   { question: 'Làm gì mà không phát ra tiếng?', answer: 'Làm thinh.' },
 ]
@@ -199,12 +203,6 @@ const normalizeSideQuestion = ({ question, answer }) => ({
   question: cleanText(question),
   answer: cleanText(answer),
 })
-
-const getNextSideQuestionIndex = (sideQuestions, usedIndexes = []) => {
-  const used = new Set(usedIndexes)
-  const nextIndex = sideQuestions.findIndex((_, index) => !used.has(index))
-  return nextIndex >= 0 ? nextIndex : 0
-}
 
 const parseCsv = (text) => {
   const rows = []
@@ -229,33 +227,147 @@ const parseCsv = (text) => {
   return rows
 }
 
+const normalizeSavedQuestionData = (value) => {
+  const fallbackQuestions = createDefaultQuestionData()
+  if (!Array.isArray(value) || value.length !== fallbackQuestions.length) return fallbackQuestions
+
+  return fallbackQuestions.map((fallback, index) => {
+    const saved = value[index] || {}
+    if (index === 9 && saved.question === 'Thứ gì càng gần deadline càng chạy nhanh?') {
+      saved.question = fallback.question
+      saved.label = fallback.label
+    }
+    const savedImageValue = Object.hasOwn(saved, 'imageUrl')
+      ? saved.imageUrl
+      : Object.hasOwn(saved, 'imagePath') ? saved.imagePath : fallback.imageUrl
+    const imagePatch = getQuestionImagePatch(savedImageValue)
+    return createQuestion({
+      ...fallback,
+      ...saved,
+      ...imagePatch,
+      icon: saved.icon || fallback.icon,
+    })
+  })
+}
+
+const normalizeSavedIndexArray = (value, max) => {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item >= 0 && item < max))]
+}
+
+const normalizeSavedResultMap = (value, max) => {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(Object.entries(value).filter(([key, result]) => {
+    const index = Number(key)
+    return Number.isInteger(index) && index >= 0 && index < max && ['green', 'red', 'wrong'].includes(result)
+  }))
+}
+
+const normalizeSavedTeamMap = (value, max) => {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(Object.entries(value).filter(([key, team]) => {
+    const index = Number(key)
+    return Number.isInteger(index) && index >= 0 && index < max && ['green', 'red'].includes(team)
+  }))
+}
+
+const normalizeSavedBooleanMap = (value) => {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(Object.entries(value).filter(([, enabled]) => Boolean(enabled)).map(([key]) => [key, true]))
+}
+
+const normalizeSavedTeam = (value) => (['green', 'red'].includes(value) ? value : null)
+
+const normalizeSavedSideQuestions = (value) => {
+  if (!Array.isArray(value)) return defaultSideQuestions
+  const normalized = value.map(normalizeSideQuestion).filter((item) => item.question && item.answer)
+  const oldQuestionIndex = normalized.findIndex((item) => item.question === 'Thứ gì càng gần deadline càng chạy nhanh?')
+  if (oldQuestionIndex >= 0) normalized[oldQuestionIndex] = defaultSideQuestions[9]
+  return normalized.length ? normalized : defaultSideQuestions
+}
+
+const normalizeSavedGameState = (value) => {
+  if (!value || typeof value !== 'object') return null
+  const questionData = normalizeSavedQuestionData(value.questionData)
+  const hintTexts = Array.isArray(value.hintTexts)
+    ? DEFAULT_HINT_TEXTS.map((fallback, index) => cleanText(value.hintTexts[index]) || fallback)
+    : DEFAULT_HINT_TEXTS
+  if (hintTexts[SPECIAL_HINT_INDEX] === 'Gợi ý đặc biệt') hintTexts[SPECIAL_HINT_INDEX] = DEFAULT_HINT_TEXTS[SPECIAL_HINT_INDEX]
+
+  return {
+    questionData,
+    overallQuestion: cleanText(value.overallQuestion) || DEFAULT_OVERALL_QUESTION,
+    hintTexts,
+    results: normalizeSavedResultMap(value.results, questionData.length),
+    openedHints: normalizeSavedIndexArray(value.openedHints, DEFAULT_HINT_TEXTS.length),
+    hintOwners: normalizeSavedTeamMap(value.hintOwners, DEFAULT_HINT_TEXTS.length),
+    sideQuestions: normalizeSavedSideQuestions(value.sideQuestions),
+    revealedMainAnswer: false,
+    revealedSideAnswer: false,
+    promptedMilestones: normalizeSavedBooleanMap(value.promptedMilestones),
+    viewHint: null,
+    winner: normalizeSavedTeam(value.winner),
+    winnerModal: false,
+    celebratingWinner: null,
+    countdownPaused: value.countdownPaused === true,
+    countdownDuration: Math.max(1, Number(value.countdownDuration) || 20),
+    countdown: Number.isFinite(Number(value.countdown)) ? Math.max(0, Number(value.countdown)) : null,
+    hintThreshold: Math.max(1, Number(value.hintThreshold) || 2),
+    selected: null,
+    selectedChoiceIndex: null,
+  }
+}
+
+const loadSavedGameState = () => {
+  try {
+    if (typeof window === 'undefined') return null
+    const rawState = window.localStorage.getItem(GAME_STORAGE_KEY)
+    if (!rawState) return null
+    const parsedState = JSON.parse(rawState)
+    return normalizeSavedGameState(parsedState)
+  } catch {
+    return null
+  }
+}
+
+const saveGameState = (state) => {
+  try {
+    window.localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // Ignore storage failures so gameplay never crashes in private mode or quota limits.
+  }
+}
+
 function App() {
-  const [questionData, setQuestionData] = useState(createDefaultQuestionData)
-  const [overallQuestion, setOverallQuestion] = useState('Địa danh nào đang được các gợi ý này hé lộ?')
-  const [hintTexts, setHintTexts] = useState(['Việt Nam', 'Con rồng', 'Di sản văn hóa thế giới', 'Gợi ý đặc biệt'])
+  const [savedGameState] = useState(loadSavedGameState)
+  const [questionData, setQuestionData] = useState(() => savedGameState?.questionData || createDefaultQuestionData())
+  const [overallQuestion, setOverallQuestion] = useState(() => savedGameState?.overallQuestion || DEFAULT_OVERALL_QUESTION)
+  const [hintTexts, setHintTexts] = useState(() => savedGameState?.hintTexts || DEFAULT_HINT_TEXTS)
   const [isEditor, setIsEditor] = useState(false)
   const [clearQuestionsConfirm, setClearQuestionsConfirm] = useState(false)
-  const [results, setResults] = useState({})
-  const [selected, setSelected] = useState(null)
-  const [openedHints, setOpenedHints] = useState([])
-  const [hintOwners, setHintOwners] = useState({})
+  const [results, setResults] = useState(() => savedGameState?.results || {})
+  const [selected, setSelected] = useState(() => savedGameState?.selected ?? null)
+  const [openedHints, setOpenedHints] = useState(() => savedGameState?.openedHints || [])
+  const [hintOwners, setHintOwners] = useState(() => savedGameState?.hintOwners || {})
   const [hintPrompt, setHintPrompt] = useState(null)
-  const [sideQuestions, setSideQuestions] = useState(defaultSideQuestions)
-  const [usedSideQuestionIndexes, setUsedSideQuestionIndexes] = useState([])
-  const [revealedMainAnswer, setRevealedMainAnswer] = useState(false)
-  const [revealedSideAnswer, setRevealedSideAnswer] = useState(false)
-  const [promptedMilestones, setPromptedMilestones] = useState({})
+  const [sideQuestions, setSideQuestions] = useState(() => savedGameState?.sideQuestions || defaultSideQuestions)
+  const [, setUsedSideQuestionIndexes] = useState([])
+  const [revealedMainAnswer, setRevealedMainAnswer] = useState(() => savedGameState?.revealedMainAnswer || false)
+  const [revealedSideAnswer, setRevealedSideAnswer] = useState(() => savedGameState?.revealedSideAnswer || false)
+  const [promptedMilestones, setPromptedMilestones] = useState(() => savedGameState?.promptedMilestones || {})
   const [viewHint, setViewHint] = useState(null)
-  const [winner, setWinner] = useState(null)
-  const [winnerModal, setWinnerModal] = useState(false)
-  const [celebratingWinner, setCelebratingWinner] = useState(null)
-  const [countdownPaused, setCountdownPaused] = useState(false)
-  const [countdownDuration, setCountdownDuration] = useState(20)
-  const [countdown, setCountdown] = useState(null)
-  const [hintThreshold, setHintThreshold] = useState(2)
+  const [winner, setWinner] = useState(() => savedGameState?.winner || null)
+  const [winnerModal, setWinnerModal] = useState(() => savedGameState?.winnerModal || false)
+  const [celebratingWinner, setCelebratingWinner] = useState(() => savedGameState?.celebratingWinner || null)
+  const [countdownPaused, setCountdownPaused] = useState(() => savedGameState?.countdownPaused || false)
+  const [countdownDuration, setCountdownDuration] = useState(() => savedGameState?.countdownDuration || 20)
+  const [countdown, setCountdown] = useState(() => savedGameState?.countdown ?? null)
+  const [hintThreshold, setHintThreshold] = useState(() => savedGameState?.hintThreshold || 2)
   const [importMessage, setImportMessage] = useState('')
   const [sideImportMessage, setSideImportMessage] = useState('')
-  const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(null)
+  const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(() => savedGameState?.selectedChoiceIndex ?? null)
   const [expandedImagePickerIndex, setExpandedImagePickerIndex] = useState(null)
   const greenScore = Object.values(results).filter((result) => result === 'green').length
   const redScore = Object.values(results).filter((result) => result === 'red').length
@@ -274,22 +386,87 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [countdown, countdownPaused])
 
-  const startHintPrompt = (team) => {
-    setRevealedSideAnswer(false)
-    setHintPrompt({
-      team,
-      sideQuestionIndex: getNextSideQuestionIndex(sideQuestions, usedSideQuestionIndexes),
-      sideQuestionCleared: false,
+  useEffect(() => {
+    saveGameState({
+      questionData,
+      overallQuestion,
+      hintTexts,
+      results,
+      selected,
+      openedHints,
+      hintOwners,
+      sideQuestions,
+      revealedMainAnswer,
+      revealedSideAnswer,
+      promptedMilestones,
+      winner,
+      winnerModal,
+      celebratingWinner,
+      countdownPaused,
+      countdownDuration,
+      countdown,
+      hintThreshold,
+      selectedChoiceIndex,
     })
-  }
+  }, [
+    questionData,
+    overallQuestion,
+    hintTexts,
+    results,
+    selected,
+    openedHints,
+    hintOwners,
+    sideQuestions,
+    revealedMainAnswer,
+    revealedSideAnswer,
+    promptedMilestones,
+    winner,
+    winnerModal,
+    celebratingWinner,
+    countdownPaused,
+    countdownDuration,
+    countdown,
+    hintThreshold,
+    selectedChoiceIndex,
+  ])
 
   const closeHintPrompt = () => {
     setHintPrompt(null)
     setRevealedSideAnswer(false)
   }
 
+  const openNextStandardHint = (team) => {
+    const hintIndex = Array.from({ length: STANDARD_HINT_COUNT }, (_, index) => index).find((index) => !openedHints.includes(index))
+    if (!Number.isInteger(hintIndex)) return
+    setOpenedHints((current) => (current.includes(hintIndex) ? current : [...current, hintIndex]))
+    if (team === 'green' || team === 'red') {
+      setHintOwners((current) => ({ ...current, [hintIndex]: team }))
+    }
+  }
+
   const openSpecialHint = () => {
     setOpenedHints((current) => (current.includes(SPECIAL_HINT_INDEX) ? current : [...current, SPECIAL_HINT_INDEX]))
+  }
+
+  const resetGameProgress = () => {
+    setResults({})
+    setSelected(null)
+    setOpenedHints([])
+    setHintOwners({})
+    setHintPrompt(null)
+    setUsedSideQuestionIndexes([])
+    setRevealedMainAnswer(false)
+    setRevealedSideAnswer(false)
+    setPromptedMilestones({})
+    setViewHint(null)
+    setWinner(null)
+    setWinnerModal(false)
+    setCelebratingWinner(null)
+    setCountdown(null)
+    setCountdownPaused(false)
+    setSelectedChoiceIndex(null)
+    setExpandedImagePickerIndex(null)
+    setClearQuestionsConfirm(false)
   }
 
   const finishSideQuestion = (winningTeam) => {
@@ -334,7 +511,7 @@ function App() {
       })
       if (hintMilestone !== null && hasAvailableStandardHints) {
         setPromptedMilestones({ ...promptedMilestones, [hintMilestone]: true })
-        startHintPrompt(result)
+        openNextStandardHint(result)
       }
     }
   }
@@ -526,7 +703,7 @@ function App() {
       <header className="game-header">
         <div className="brand-line">
           <div className="matsuri-key-visual"><div className="matsuri-logos"><img className="ceyc-combined-logo" src={`${import.meta.env.BASE_URL}ceyc-matsuri-full.png`} alt="Logo CeYc Matsuri" /></div></div>
-          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={openSpecialHint} disabled={isSpecialHintOpen}>Mở gợi ý đặc biệt</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
+          <div className="status-controls"><div className="progress"><span>{revealedCount}</span> / {questionData.length} câu hỏi</div><label className="hint-mode">Mở gợi ý sau <select value={hintThreshold} onChange={(event) => setHintThreshold(Number(event.target.value))}>{[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value} điểm</option>)}</select></label><button className="setup-button" onClick={openSpecialHint} disabled={isSpecialHintOpen}>Mở gợi ý đặc biệt</button><button className="setup-button reset-button" onClick={resetGameProgress}>Reset</button><button className="setup-button" onClick={() => setIsEditor(true)}>Thiết lập</button></div>
         </div>
         <div className="overview">
           <button className="master-question" onClick={() => setWinnerModal(true)}><span>Thử thách tối thượng</span><strong>{winner ? `Đội chiến thắng: Đội ${winner === 'green' ? 'Xanh' : 'Đỏ'}` : overallQuestion}</strong></button>
@@ -572,7 +749,7 @@ function App() {
         const selectedQuestionImageSrc = getQuestionImageSrc(selectedQuestion)
         return (
         <div className="modal-backdrop" role="presentation">
-          <section className="answer-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
+          <section className="answer-modal main-question-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
             <button className="close-modal" onClick={closeMainQuestion} aria-label="Đóng">×</button>
             <p className="modal-label">CÂU HỎI {String(selected + 1).padStart(2, '0')}</p>
             <h2 id="question-title">{selectedQuestion.question}</h2>
@@ -607,6 +784,7 @@ function App() {
                   <p className="side-answer main-answer"><span>Đáp án</span><strong>{getQuestionAnswer(selectedQuestion)}</strong></p>
                 )}
                 <div className="modal-actions main-winner-actions">
+                  <button className="wrong-action" onClick={() => markAnswer('wrong')}>Trả lời sai</button>
                   <button className="green-action" onClick={() => markAnswer('green')}>Đội Xanh thắng</button>
                   <button className="red-action" onClick={() => markAnswer('red')}>Đội Đỏ thắng</button>
                 </div>
@@ -628,7 +806,7 @@ function App() {
           const promptedTeamName = hintPrompt.team === 'green' ? 'Đội Xanh' : 'Đội Đỏ'
           return (
             <div className="modal-backdrop" role="presentation">
-              <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
+              <section className="answer-modal hint-modal side-question-modal" role="dialog" aria-modal="true">
                 <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
                 <p className="modal-label">CÂU HỎI PHỤ {String(sideQuestionIndex + 1).padStart(2, '0')}</p>
                 <h2>{sideQuestion.question}</h2>
@@ -689,7 +867,7 @@ function App() {
         </div>
       )}
 
-      {celebratingWinner && <div className="winner-overlay" role="dialog" aria-modal="true"><button className="close-modal" onClick={() => setCelebratingWinner(null)} aria-label="Đóng">×</button><div className={`winner-celebration ${celebratingWinner}`}><i className="firework firework-one" /><i className="firework firework-two" /><i className="firework firework-three" /><i className="firework firework-four" /><i className="firework firework-five" /><i className="firework firework-six" /><i className="firework firework-seven" /><i className="firework firework-eight" /><i className="firework firework-nine" /><i className="firework firework-ten" /><p>CHÚC MỪNG</p><h2>ĐỘI {celebratingWinner === 'green' ? 'XANH' : 'ĐỎ'} CHIẾN THẮNG!</h2><span>✦ ✦ ✦</span></div></div>}
+      {celebratingWinner && <div className="winner-overlay" role="dialog" aria-modal="true"><button className="close-modal" onClick={() => setCelebratingWinner(null)} aria-label="Đóng">×</button><div className={`winner-celebration ${celebratingWinner}`}><i className="firework firework-one" /><i className="firework firework-two" /><i className="firework firework-three" /><i className="firework firework-four" /><i className="firework firework-five" /><i className="firework firework-six" /><i className="firework firework-seven" /><i className="firework firework-eight" /><i className="firework firework-nine" /><i className="firework firework-ten" /><p>CHÚC MỪNG</p><h2>ĐỘI {celebratingWinner === 'green' ? 'XANH' : 'ĐỎ'} CHIẾN THẮNG!</h2><div className="ultimate-answer"><span>ĐÁP ÁN THỬ THÁCH TỐI THƯỢNG</span><strong>{ULTIMATE_ANSWER}</strong></div><span>✦ ✦ ✦</span></div></div>}
 
       {isEditor && (
         <section className="editor-page" aria-label="Thiết lập câu hỏi">
