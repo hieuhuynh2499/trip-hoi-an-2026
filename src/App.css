@@ -254,6 +254,46 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   background: linear-gradient(145deg, #8d2b3a, #5c1525);
 }
 
+.side-question-state {
+  display: grid;
+  gap: 6px;
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 2px solid #9fd7ff;
+  border-radius: 12px;
+  color: #e9f6ff;
+  background: linear-gradient(145deg, #073b78, #061f55);
+  box-shadow: 0 4px 0 #03163d;
+}
+
+.side-question-state span,
+.side-winner-control p {
+  margin: 0;
+  color: #ffd84d;
+  font: 800 .68rem 'Be Vietnam Pro', sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.side-question-state strong {
+  overflow-wrap: anywhere;
+  font: 800 clamp(1rem, 1.8vw, 1.25rem)/1.18 'Be Vietnam Pro', sans-serif;
+}
+
+.side-question-state.is-hidden {
+  border-color: #9fd7ff;
+}
+
+.side-question-state.is-revealed {
+  border-color: #fff0a3;
+  background: linear-gradient(145deg, #0a8c67, #065346);
+}
+
+.side-question-actions {
+  grid-template-columns: 1fr;
+  margin-top: 18px;
+}
+
 .side-answer {
   display: grid;
   gap: 7px;
@@ -276,6 +316,16 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
 .side-answer strong {
   overflow-wrap: anywhere;
   font: 800 clamp(1.05rem, 2.1vw, 1.5rem)/1.18 'Be Vietnam Pro', sans-serif;
+}
+
+.side-winner-control {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.side-winner-actions {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .choice-editor {
@@ -302,7 +352,8 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   }
 
   .choice-list,
-  .choice-editor {
+  .choice-editor,
+  .side-winner-actions {
     grid-template-columns: 1fr;
   }
 }

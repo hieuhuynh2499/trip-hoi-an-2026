@@ -230,13 +230,14 @@ function App() {
     setRevealedSideAnswer(false)
   }
 
-  const finishSideQuestion = (isCorrect) => {
+  const finishSideQuestion = (winningTeam) => {
     if (!hintPrompt) return
+    if (winningTeam !== 'green' && winningTeam !== 'red') return
     setUsedSideQuestionIndexes((current) => (
       current.includes(hintPrompt.sideQuestionIndex) ? current : [...current, hintPrompt.sideQuestionIndex]
     ))
     setRevealedSideAnswer(false)
-    setHintPrompt(isCorrect ? { ...hintPrompt, sideQuestionCleared: true } : null)
+    setHintPrompt({ ...hintPrompt, team: winningTeam, sideQuestionCleared: true })
   }
 
   const markAnswer = (result) => {
@@ -528,19 +529,34 @@ function App() {
         const sideQuestionIndex = Number.isInteger(hintPrompt.sideQuestionIndex) ? hintPrompt.sideQuestionIndex : 0
         const sideQuestion = sideQuestions[sideQuestionIndex] || sideQuestions[0] || defaultSideQuestions[0]
         if (!hintPrompt.sideQuestionCleared) {
+          const promptedTeamName = hintPrompt.team === 'green' ? 'Đội Xanh' : 'Đội Đỏ'
           return (
             <div className="modal-backdrop" role="presentation">
               <section className="answer-modal hint-modal" role="dialog" aria-modal="true">
                 <button className="close-modal" onClick={closeHintPrompt} aria-label="Đóng">×</button>
                 <p className="modal-label">CÂU HỎI PHỤ {String(sideQuestionIndex + 1).padStart(2, '0')}</p>
                 <h2>{sideQuestion.question}</h2>
-                {revealedSideAnswer && <p className="side-answer"><span>Đáp án</span><strong>{sideQuestion.answer}</strong></p>}
-                <p className="modal-question">{hintPrompt.team ? `Đội ${hintPrompt.team === 'green' ? 'Xanh' : 'Đỏ'} đang tranh quyền mở gợi ý.` : 'Câu hỏi phụ để mở gợi ý thủ công.'}</p>
-                <div className="modal-actions side-question-actions">
-                  <button className="wrong-action" onClick={() => finishSideQuestion(false)}>Sai</button>
-                  <button className="countdown-button" onClick={() => setRevealedSideAnswer(!revealedSideAnswer)}>{revealedSideAnswer ? 'Ẩn đáp án' : 'Hiện đáp án'}</button>
-                  <button className="green-action" onClick={() => finishSideQuestion(true)}>Đúng</button>
+                <p className="modal-question">{hintPrompt.team ? `${promptedTeamName} đã kích hoạt mốc gợi ý. Trả lời câu hỏi phụ để tranh quyền mở gợi ý.` : 'Câu hỏi phụ để mở gợi ý thủ công.'}</p>
+                <div className={`side-question-state ${revealedSideAnswer ? 'is-revealed' : 'is-hidden'}`} aria-live="polite">
+                  <span>{revealedSideAnswer ? 'ĐÁP ÁN ĐÃ HIỆN' : 'ĐÁP ÁN ĐANG ẨN'}</span>
+                  <strong>{revealedSideAnswer ? 'Chọn đội thắng câu hỏi phụ để tiếp tục mở gợi ý.' : 'Bấm Hiện đáp án khi cần kiểm tra câu trả lời.'}</strong>
                 </div>
+                {revealedSideAnswer ? (
+                  <>
+                    <p className="side-answer"><span>Đáp án</span><strong>{sideQuestion.answer}</strong></p>
+                    <div className="side-winner-control" aria-label="Chọn đội thắng câu hỏi phụ">
+                      <p>Đội thắng câu hỏi phụ</p>
+                      <div className="modal-actions side-winner-actions">
+                        <button className="green-action" onClick={() => finishSideQuestion('green')}>Đội Xanh</button>
+                        <button className="red-action" onClick={() => finishSideQuestion('red')}>Đội Đỏ</button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="modal-actions side-question-actions">
+                    <button className="countdown-button" onClick={() => setRevealedSideAnswer(true)}>Hiện đáp án</button>
+                  </div>
+                )}
               </section>
             </div>
           )
