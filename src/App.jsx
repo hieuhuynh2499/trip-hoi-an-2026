@@ -14,6 +14,19 @@ const questionTypeLabels = {
 }
 
 const cleanText = (value) => String(value ?? '').trim()
+const getPublicAssetUrl = (value) => {
+  const source = cleanText(value)
+  if (!source) return ''
+  if (/^(?:[a-z][a-z\d+\-.]*:|\/\/)/i.test(source)) return source
+
+  const basePath = import.meta.env.BASE_URL || '/'
+  const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`
+  if (normalizedBasePath !== '/' && source.startsWith(normalizedBasePath)) return source
+
+  const trimmedSource = source.replace(/^\/+/, '')
+  if (normalizedBasePath !== '/' && trimmedSource.startsWith(normalizedBasePath.slice(1))) return `/${trimmedSource}`
+  return `${normalizedBasePath}${trimmedSource}`
+}
 const foldVietnameseText = (value) => cleanText(value)
   .toLowerCase()
   .normalize('NFD')
@@ -324,7 +337,7 @@ function App() {
       const topicColumn = column(['topic', 'chude'], 0)
       const questionColumn = column(['question', 'cauhoi'], 1)
       const answerColumn = column(['answer', 'dapan'], 2)
-      const imageColumn = column(['imageurl', 'image', 'urlhinh'], 3)
+      const imageColumn = column(['imageurl', 'imagepath', 'image', 'urlhinh', 'duongdananh'], 3)
       const detailColumn = column(['detail', 'mota'], 4)
       const typeColumn = column(['type', 'questiontype', 'loai', 'loaicauhoi'], -1)
       const choicesColumn = column(['choices', 'options', 'luachon', 'phuongan'], -1)
@@ -471,13 +484,14 @@ function App() {
         const correctChoiceIndex = normalizeCorrectChoiceIndex(selectedQuestion.correctChoiceIndex)
         const hasSelectedChoice = selectedChoiceIndex !== null
         const selectedChoiceIsCorrect = selectedChoiceIndex === correctChoiceIndex
+        const selectedQuestionImageSrc = getPublicAssetUrl(selectedQuestion.imageUrl)
         return (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
             <button className="close-modal" onClick={() => { setSelected(null); setSelectedChoiceIndex(null) }} aria-label="Đóng">×</button>
             <p className="modal-label">CÂU HỎI {String(selected + 1).padStart(2, '0')}</p>
             <h2 id="question-title">{selectedQuestion.question}</h2>
-            {selectedQuestion.imageUrl && <img className="question-image" src={selectedQuestion.imageUrl} alt="Hình minh họa câu hỏi" />}
+            {selectedQuestionImageSrc && <img className="question-image" src={selectedQuestionImageSrc} alt="Hình minh họa câu hỏi" />}
             {isMultipleChoice && (
               <div className="choice-list" aria-label="Lựa chọn trắc nghiệm">
                 {choices.map((choice, choiceIndex) => {
@@ -570,7 +584,7 @@ function App() {
           <header className="editor-header"><div><p className="eyebrow">THIẾT LẬP NỘI DUNG</p><h1>Chỉnh sửa câu hỏi</h1></div><button className="done-button" onClick={() => setIsEditor(false)}>Xong</button></header>
           <div className="editor-form">
             <section className="csv-import">
-              <div><span>NHẬP NHANH</span><h2>Import câu hỏi từ CSV</h2><p>Dùng các cột: <b>topic, type, question, answer, correctChoice, choiceA, choiceB, choiceC, choiceD, imageUrl, detail</b>. Có thể thêm cột <b>number</b> (01–12) để chọn đúng vị trí câu hỏi.</p></div>
+              <div><span>NHẬP NHANH</span><h2>Import câu hỏi từ CSV</h2><p>Dùng các cột: <b>topic, type, question, answer, correctChoice, choiceA, choiceB, choiceC, choiceD, imageUrl, detail</b>. Cột <b>imageUrl</b> chấp nhận <b>/images/ten-anh.jpg</b> hoặc URL <b>https</b>. Có thể thêm cột <b>number</b> (01–12) để chọn đúng vị trí câu hỏi.</p></div>
               <div className="csv-actions">
                 <button className="csv-export" type="button" onClick={exportQuestions}>Xuất CSV</button>
                 <label className="csv-upload">Chọn file CSV<input type="file" accept=".csv,text/csv" onChange={importQuestions} /></label>
@@ -578,7 +592,7 @@ function App() {
               {importMessage && <small>{importMessage}</small>}
             </section>
             <section className="csv-import clear-questions-panel">
-              <div><span>XÓA NHANH</span><h2>Xóa toàn bộ câu hỏi chính</h2><p>Xóa nội dung 12 câu hỏi chính: câu hỏi, đáp án, bốn lựa chọn trắc nghiệm, URL hình ảnh và mô tả tùy biến. Câu hỏi phụ và gợi ý được giữ nguyên.</p></div>
+              <div><span>XÓA NHANH</span><h2>Xóa toàn bộ câu hỏi chính</h2><p>Xóa nội dung 12 câu hỏi chính: câu hỏi, đáp án, bốn lựa chọn trắc nghiệm, đường dẫn ảnh và mô tả tùy biến. Câu hỏi phụ và gợi ý được giữ nguyên.</p></div>
               <div className="csv-actions">
                 <button className="clear-questions-button" type="button" onClick={() => setClearQuestionsConfirm(true)}>Xóa toàn bộ câu hỏi</button>
               </div>
@@ -612,7 +626,7 @@ function App() {
                             </select>
                           </label>
                           <label className="field">Câu hỏi<input value={item.question} onChange={(event) => updateQuestion(index, { question: event.target.value })} /></label>
-                          <label className="field">URL hình ảnh<input placeholder="https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => updateQuestion(index, { imageUrl: event.target.value })} /></label>
+                          <label className="field image-path-field">Ảnh minh họa<input placeholder="/images/ten-anh.jpg hoặc https://example.com/image.jpg" value={item.imageUrl} onChange={(event) => updateQuestion(index, { imageUrl: event.target.value })} /><small>Chép file vào public/images rồi nhập /images/tên-file. URL https vẫn dùng được.</small></label>
                           {questionType === QUESTION_TYPE_MULTIPLE && (
                             <div className="choice-editor">
                               {choices.map((choice, choiceIndex) => (
