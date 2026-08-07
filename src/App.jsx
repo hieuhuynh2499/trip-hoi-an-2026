@@ -189,6 +189,7 @@ function App() {
   const [hintPrompt, setHintPrompt] = useState(null)
   const [sideQuestions, setSideQuestions] = useState(defaultSideQuestions)
   const [usedSideQuestionIndexes, setUsedSideQuestionIndexes] = useState([])
+  const [revealedMainAnswer, setRevealedMainAnswer] = useState(false)
   const [revealedSideAnswer, setRevealedSideAnswer] = useState(false)
   const [promptedMilestones, setPromptedMilestones] = useState({})
   const [viewHint, setViewHint] = useState(null)
@@ -240,10 +241,21 @@ function App() {
     setHintPrompt({ ...hintPrompt, team: winningTeam, sideQuestionCleared: true })
   }
 
-  const markAnswer = (result) => {
-    setResults({ ...results, [selected]: result })
+  const openMainQuestion = (index) => {
+    setSelected(index)
+    setSelectedChoiceIndex(null)
+    setRevealedMainAnswer(false)
+  }
+
+  const closeMainQuestion = () => {
     setSelected(null)
     setSelectedChoiceIndex(null)
+    setRevealedMainAnswer(false)
+  }
+
+  const markAnswer = (result) => {
+    setResults({ ...results, [selected]: result })
+    closeMainQuestion()
     if (result === 'green' || result === 'red') {
       const currentScore = Object.values(results).filter((value) => value === result).length
       const nextScore = currentScore + 1
@@ -283,8 +295,7 @@ function App() {
   const clearMainQuestions = () => {
     setQuestionData((current) => current.map((item, index) => createEmptyQuestion(index, item.questionType)))
     setResults({})
-    setSelected(null)
-    setSelectedChoiceIndex(null)
+    closeMainQuestion()
     setWinner(null)
     setWinnerModal(false)
     setCelebratingWinner(null)
@@ -459,19 +470,18 @@ function App() {
           const result = results[index]
           const isOpen = result === 'green' || result === 'red'
           const isWrong = result === 'wrong'
-          const revealedAnswer = getQuestionAnswer(item)
-          const hasLongAnswer = revealedAnswer.length > 14
+          const scoredTeamLabel = result === 'green' ? 'Đội Xanh' : 'Đội Đỏ'
           return (
             <button
-              className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''} ${hasLongAnswer ? 'has-long-answer' : ''}`}
+              className={`question-card ${isOpen ? 'is-open' : ''} ${isWrong ? 'is-wrong' : ''}`}
               data-testid={`question-card-${index + 1}`}
               key={index}
-              onClick={() => { if (!result) { setSelected(index); setSelectedChoiceIndex(null) } }}
+              onClick={() => { if (!result) openMainQuestion(index) }}
               disabled={Boolean(result)}
             >
               {!isOpen && !isWrong && <span className="card-preview">{genericQuestionIcons[index]}</span>}
               {isOpen && <span className="card-icon">✓</span>}
-              <strong className={isOpen ? 'revealed-answer' : ''}>{isOpen ? revealedAnswer : String(index + 1).padStart(2, '0')}</strong>
+              <strong className={isOpen ? 'scored-team-label' : undefined}>{isOpen ? scoredTeamLabel : String(index + 1).padStart(2, '0')}</strong>
               {isWrong && <small>Đáp án không đúng</small>}
             </button>
           )
@@ -489,37 +499,49 @@ function App() {
         return (
         <div className="modal-backdrop" role="presentation">
           <section className="answer-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
-            <button className="close-modal" onClick={() => { setSelected(null); setSelectedChoiceIndex(null) }} aria-label="Đóng">×</button>
+            <button className="close-modal" onClick={closeMainQuestion} aria-label="Đóng">×</button>
             <p className="modal-label">CÂU HỎI {String(selected + 1).padStart(2, '0')}</p>
             <h2 id="question-title">{selectedQuestion.question}</h2>
             {selectedQuestionImageSrc && <img className="question-image" src={selectedQuestionImageSrc} alt="Hình minh họa câu hỏi" />}
-            {isMultipleChoice && (
-              <div className="choice-list" aria-label="Lựa chọn trắc nghiệm">
-                {choices.map((choice, choiceIndex) => {
-                  const isSelectedChoice = selectedChoiceIndex === choiceIndex
-                  return (
-                    <button
-                      className={`choice-option ${isSelectedChoice ? 'is-selected' : ''} ${isSelectedChoice && selectedChoiceIsCorrect ? 'is-correct' : ''} ${isSelectedChoice && !selectedChoiceIsCorrect ? 'is-incorrect' : ''}`}
-                      data-testid={`choice-option-${choiceLetters[choiceIndex].toLowerCase()}`}
-                      data-choice-value={choice}
-                      key={choiceLetters[choiceIndex]}
-                      type="button"
-                      aria-pressed={isSelectedChoice}
-                      onClick={() => setSelectedChoiceIndex(choiceIndex)}
-                    >
-                      <span>{choiceLetters[choiceIndex]}</span>
-                      <strong>{choice || `Lựa chọn ${choiceIndex + 1}`}</strong>
-                    </button>
-                  )
-                })}
+            {revealedMainAnswer ? (
+              <>
+                {isMultipleChoice ? (
+                  <>
+                    <div className="choice-list" aria-label="Lựa chọn trắc nghiệm">
+                      {choices.map((choice, choiceIndex) => {
+                        const isSelectedChoice = selectedChoiceIndex === choiceIndex
+                        const isCorrectChoice = choiceIndex === correctChoiceIndex
+                        return (
+                          <button
+                            className={`choice-option ${isSelectedChoice ? 'is-selected' : ''} ${isCorrectChoice ? 'is-correct' : ''} ${isSelectedChoice && !isCorrectChoice ? 'is-incorrect' : ''}`}
+                            data-testid={`choice-option-${choiceLetters[choiceIndex].toLowerCase()}`}
+                            data-choice-value={choice}
+                            key={choiceLetters[choiceIndex]}
+                            type="button"
+                            aria-pressed={isSelectedChoice}
+                            onClick={() => setSelectedChoiceIndex(choiceIndex)}
+                          >
+                            <span>{choiceLetters[choiceIndex]}</span>
+                            <strong>{choice || `Lựa chọn ${choiceIndex + 1}`}</strong>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="modal-question">{hasSelectedChoice ? `Đã chọn ${choiceLetters[selectedChoiceIndex]}. ${choices[selectedChoiceIndex] || `Lựa chọn ${selectedChoiceIndex + 1}`}${selectedChoiceIsCorrect ? ' — đáp án đúng.' : ` — đáp án đúng là ${getQuestionAnswer(selectedQuestion)}.`}` : `Đáp án đúng là ${choiceLetters[correctChoiceIndex]}. ${getQuestionAnswer(selectedQuestion)}.`}</p>
+                  </>
+                ) : (
+                  <p className="side-answer main-answer"><span>Đáp án</span><strong>{getQuestionAnswer(selectedQuestion)}</strong></p>
+                )}
+                <div className="modal-actions main-winner-actions">
+                  <button className="green-action" onClick={() => markAnswer('green')}>Đội Xanh thắng</button>
+                  <button className="red-action" onClick={() => markAnswer('red')}>Đội Đỏ thắng</button>
+                </div>
+              </>
+            ) : (
+              <div className="modal-actions main-reveal-actions">
+                <button className="countdown-button" onClick={() => setRevealedMainAnswer(true)}>Hiện đáp án</button>
               </div>
             )}
-            <p className="modal-question">{isMultipleChoice ? (hasSelectedChoice ? `Đã chọn ${choiceLetters[selectedChoiceIndex]}. ${choices[selectedChoiceIndex] || `Lựa chọn ${selectedChoiceIndex + 1}`}${selectedChoiceIsCorrect ? ' — đáp án đúng.' : ` — đáp án đúng là ${getQuestionAnswer(selectedQuestion)}.`}` : 'Chọn một trong bốn đáp án, sau đó chọn kết quả chấm.') : 'Hãy nghe phần trả lời của người chơi, sau đó chọn kết quả chấm.'}</p>
-            <div className="modal-actions">
-              <button className="wrong-action" onClick={() => markAnswer('wrong')}>Sai</button>
-              <button className="green-action" onClick={() => markAnswer('green')}>Đội Xanh đúng</button>
-              <button className="red-action" onClick={() => markAnswer('red')}>Đội Đỏ đúng</button>
-            </div>
           </section>
         </div>
         )

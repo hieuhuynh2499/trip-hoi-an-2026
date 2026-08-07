@@ -294,6 +294,11 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   margin-top: 18px;
 }
 
+.main-reveal-actions {
+  grid-template-columns: 1fr;
+  margin-top: 22px;
+}
+
 .side-answer {
   display: grid;
   gap: 7px;
@@ -318,6 +323,10 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
   font: 800 clamp(1.05rem, 2.1vw, 1.5rem)/1.18 'Be Vietnam Pro', sans-serif;
 }
 
+.main-answer {
+  margin-bottom: 18px;
+}
+
 .side-winner-control {
   display: grid;
   gap: 10px;
@@ -326,6 +335,15 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
 
 .side-winner-actions {
   grid-template-columns: repeat(2, 1fr);
+}
+
+.main-winner-actions {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.question-grid:not(.topic-grid) .question-card.is-open .scored-team-label {
+  color: #fff;
+  text-shadow: 0 5px 0 #071432, 0 10px 16px #000a;
 }
 
 .choice-editor {
@@ -353,6 +371,7 @@ footer{margin-top:13px;color:#8aa8d5;text-align:center;font-size:.65rem;letter-s
 
   .choice-list,
   .choice-editor,
+  .main-winner-actions,
   .side-winner-actions {
     grid-template-columns: 1fr;
   }
